@@ -170,29 +170,114 @@ export default function CopywritingModule() {
     setInput("");
     setIsGenerating(true);
 
-    setTimeout(() => {
-      const responses: Record<SubMode, string[]> = {
-        marketing: [
-          "这个营销方向很有潜力！建议从目标受众分析开始，再制定具体的渠道策略和预算分配。",
-          "我为你梳理了以下营销框架：\n\n1. **市场分析** - 竞品调研+SWOT\n2. **目标设定** - SMART原则\n3. **策略制定** - 4P/4C营销组合\n4. **执行计划** - 时间线+责任人\n5. **效果评估** - KPI指标\n\n需要我详细展开哪部分？",
-          "方案已生成！我建议重点关注校园内的口碑传播，配合社交媒体的二次扩散。",
-        ],
-        ppt: [
-          "PPT大纲已生成！建议采用「总-分-总」的结构，每页聚焦一个核心观点。",
-          "我为你设计了以下PPT结构：\n\n**封面页** - 主题+副标题+个人信息\n**目录页** - 3-4个核心章节\n**内容页** - 每页一个论点+数据支撑\n**总结页** - 核心结论+展望\n**致谢页**\n\n需要我帮你细化某一页的内容吗？",
-          "好的，演讲稿已写好！注意控制每页的讲解时间在1-2分钟，保持节奏感。",
-        ],
-        copywriting: [
-          "文案初稿已完成！我采用了情感共鸣+痛点切入的写法，你可以根据品牌调性微调。",
-          "这篇文案的结构如下：\n\n**标题** - 悬念式/数字式/对比式\n**开头** - 场景代入，引发共鸣\n**正文** - 痛点→解决方案→价值升华\n**结尾** - 行动号召（CTA）\n\n需要我调整风格或补充其他版本吗？",
-          "已润色完成！优化了语言的节奏感和画面感，让阅读体验更流畅。",
-        ],
-      };
-      const modeResponses = responses[activeSubMode];
+    // 获取当前对话的所有消息（用于上下文）
+    const currentConv = conversations.find((c) => c.id === activeConvId);
+    const historyMessages = (currentConv?.messages ?? [])
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    // 构建system prompt根据子功能
+    const systemPrompts: Record<SubMode, string> = {
+      marketing:
+        "你是一位资深营销策划专家，擅长校园营销、品牌推广、活动策划。请用中文回复，输出要有清晰的结构和可执行的方案。",
+      ppt:
+        "你是一位专业的PPT设计师和演讲教练，擅长大纲规划、页面设计、演讲稿撰写。请用中文回复，给出结构清晰、视觉友好的建议。",
+      copywriting:
+        "你是一位资深文案写手，擅长公众号推文、广告文案、新闻稿、品牌故事。请用中文回复，文案要有感染力和传播力。",
+    };
+
+    try {
+      const response = await fetch("/api/deepseek/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...historyMessages, { role: "user", content }],
+          systemPrompt: systemPrompts[activeSubMode],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const assistantMsg = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant" as const,
+          content: `❌ 请求失败：${errorData.error ?? response.statusText}\n\n请检查 DeepSeek API Key 是否已配置。`,
+          timestamp: Date.now(),
+        };
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeConvId
+              ? { ...c, messages: [...c.messages, assistantMsg], updatedAt: Date.now() }
+              : c
+          )
+        );
+        setIsGenerating(false);
+        return;
+      }
+
+      // SSE 流式读取
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+      const assistantId = (Date.now() + 1).toString();
+
+      // 先插入一个空的 assistant 消息
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConvId
+            ? {
+                ...c,
+                messages: [
+                  ...c.messages,
+                  { id: assistantId, role: "assistant", content: "", timestamp: Date.now() },
+                ],
+              }
+            : c
+        )
+      );
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          if (data === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullContent += delta;
+              setConversations((prev) =>
+                prev.map((c) =>
+                  c.id === activeConvId
+                    ? {
+                        ...c,
+                        messages: c.messages.map((m) =>
+                          m.id === assistantId ? { ...m, content: fullContent } : m
+                        ),
+                        updatedAt: Date.now(),
+                      }
+                    : c
+                )
+              );
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+      }
+
+      setIsGenerating(false);
+    } catch (err: any) {
       const assistantMsg = {
         id: (Date.now() + 1).toString(),
         role: "assistant" as const,
-        content: modeResponses[Math.floor(Math.random() * modeResponses.length)],
+        content: `❌ 网络错误：${err.message ?? "无法连接到服务器"}\n\n请检查网络连接或 API 配置。`,
         timestamp: Date.now(),
       };
       setConversations((prev) =>
@@ -203,7 +288,7 @@ export default function CopywritingModule() {
         )
       );
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   const createNewConversation = () => {
