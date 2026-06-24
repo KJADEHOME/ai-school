@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import PhoneLogin from "./pages/PhoneLogin";
 import NotFound from "./pages/NotFound";
 
 // Modules
@@ -37,6 +38,7 @@ export default function App() {
       {/* Public */}
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/login/phone" element={<PhoneLogin />} />
 
       {/* Creation Modules - 老师和学生都可以用 */}
       <Route path="/module/copywriting" element={<CopywritingModule />} />

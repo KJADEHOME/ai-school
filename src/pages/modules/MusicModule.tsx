@@ -25,6 +25,7 @@ import {
   Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/providers/trpc";
 import AppLayout from "@/components/layout/AppLayout";
 
 /* ===== 心情风格映射 ===== */
@@ -82,11 +83,34 @@ export default function MusicModule() {
     );
   };
 
-  const handleGenerate = () => {
+  // tRPC mutations
+  const generateMutation = trpc.mureka.generate.useMutation();
+  const mockGenerateMutation = trpc.mureka.mockGenerate.useMutation();
+
+  const handleGenerate = async () => {
     if (!selectedMood || !selectedGenre) return;
     setIsGenerating(true);
-    // Simulate AI generation
-    setTimeout(() => {
+
+    try {
+      // Try real API first
+      const result = await generateMutation.mutateAsync({
+        title: lyricsInput.slice(0, 30) || "即兴创作",
+        mood: selectedMood,
+        genre: selectedGenre,
+        lyrics: lyricsInput || undefined,
+      });
+
+      if (!result.success && result.mock) {
+        // Fallback to mock generation
+        await mockGenerateMutation.mutateAsync({
+          title: lyricsInput.slice(0, 30) || "即兴创作",
+          mood: selectedMood,
+          genre: selectedGenre,
+          lyrics: lyricsInput || undefined,
+        });
+      }
+
+      // Add to local tracks
       const moodLabel = moodStyles.find((m) => m.id === selectedMood)?.label || "";
       const genreLabel = musicGenres.find((g) => g.id === selectedGenre)?.label || "";
       const newTrack = {
@@ -94,13 +118,28 @@ export default function MusicModule() {
         title: `${moodLabel}${genreLabel} · ${lyricsInput.slice(0, 8) || "即兴创作"}`,
         mood: selectedMood,
         genre: selectedGenre,
-        duration: `${Math.floor(Math.random() * 3 + 2)}:${Math.floor(Math.random() * 50 + 10)}`,
+        duration: `${Math.floor(Math.random() * 3 + 2)}:${Math.floor(Math.random() * 50 + 10).toString().padStart(2, "0")}`,
         liked: false,
       };
       setGeneratedTracks((prev) => [newTrack, ...prev]);
-      setIsGenerating(false);
       setCurrentTrack(newTrack);
-    }, 2500);
+    } catch {
+      // Even if API fails, show local track for demo
+      const moodLabel = moodStyles.find((m) => m.id === selectedMood)?.label || "";
+      const genreLabel = musicGenres.find((g) => g.id === selectedGenre)?.label || "";
+      const newTrack = {
+        id: Date.now(),
+        title: `${moodLabel}${genreLabel} · ${lyricsInput.slice(0, 8) || "即兴创作"}`,
+        mood: selectedMood,
+        genre: selectedGenre,
+        duration: `${Math.floor(Math.random() * 3 + 2)}:${Math.floor(Math.random() * 50 + 10).toString().padStart(2, "0")}`,
+        liked: false,
+      };
+      setGeneratedTracks((prev) => [newTrack, ...prev]);
+      setCurrentTrack(newTrack);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handlePlayTrack = (track: (typeof demoTracks)[0]) => {

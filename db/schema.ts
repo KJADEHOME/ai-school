@@ -17,6 +17,7 @@ export const users = mysqlTable("users", {
   unionId: varchar("unionId", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 20 }),
   avatar: text("avatar"),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   // 账户类型: individual=个人, school_admin=学校管理员, school_sub=学校子账号
@@ -68,6 +69,7 @@ export const userBalances = mysqlTable("user_balances", {
     "3d",
     "drama",
     "canvas",
+    "music",
   ]).notNull(),
   balancePoints: int("balancePoints").default(0).notNull(),
   totalRecharged: int("totalRecharged").default(0).notNull(),
@@ -90,6 +92,7 @@ export const rechargePackages = mysqlTable("recharge_packages", {
     "3d",
     "drama",
     "canvas",
+    "music",
     "universal",
   ]).notNull(),
   points: int("points").notNull(),
@@ -127,6 +130,7 @@ export const transactions = mysqlTable("transactions", {
     "3d",
     "drama",
     "canvas",
+    "music",
     "universal",
   ]).notNull(),
   // 点数变动(正=增加,负=减少)
@@ -156,6 +160,7 @@ export const balanceAllocations = mysqlTable("balance_allocations", {
     "3d",
     "drama",
     "canvas",
+    "music",
     "universal",
   ]).notNull(),
   amount: int("amount").notNull(),
@@ -207,6 +212,7 @@ export const assignments = mysqlTable("assignments", {
     "3d",
     "drama",
     "canvas",
+    "music",
   ]).notNull(),
   dueDate: timestamp("dueDate"),
   status: mysqlEnum("status", ["draft", "published", "closed"])
@@ -235,6 +241,7 @@ export const projects = mysqlTable("projects", {
     "3d",
     "drama",
     "canvas",
+    "music",
   ]).notNull(),
   status: mysqlEnum("status", ["draft", "completed", "submitted", "graded"])
     .default("draft")
@@ -267,6 +274,7 @@ export const templates = mysqlTable("templates", {
     "3d",
     "drama",
     "canvas",
+    "music",
   ]).notNull(),
   thumbnail: text("thumbnail"),
   config: json("config"),
@@ -278,3 +286,39 @@ export const templates = mysqlTable("templates", {
 });
 
 export type Template = typeof templates.$inferSelect;
+
+// ========== 短信验证码表 ==========
+export const smsCodes = mysqlTable("sms_codes", {
+  id: serial("id").primaryKey(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  code: varchar("code", { length: 6 }).notNull(),
+  purpose: mysqlEnum("purpose", ["login", "register", "reset_password", "bind_phone"])
+    .default("login")
+    .notNull(),
+  used: mysqlEnum("used", ["yes", "no"]).default("no").notNull(),
+  attempts: int("attempts").default(0).notNull(),
+  expiredAt: timestamp("expiredAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SmsCode = typeof smsCodes.$inferSelect;
+
+// ========== 音乐生成记录表 ==========
+export const musicGenerations = mysqlTable("music_generations", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  mood: varchar("mood", { length: 50 }),
+  genre: varchar("genre", { length: 50 }),
+  lyrics: text("lyrics"),
+  audioUrl: text("audioUrl"),
+  coverUrl: text("coverUrl"),
+  duration: varchar("duration", { length: 10 }),
+  status: mysqlEnum("status", ["generating", "completed", "failed"])
+    .default("generating")
+    .notNull(),
+  externalId: varchar("externalId", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MusicGeneration = typeof musicGenerations.$inferSelect;
