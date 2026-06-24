@@ -1,1 +1,1 @@
-{"version": 2, "buildCommand": "npx vite build", "outputDirectory": "dist/public", "rewrites": [{"source": "/(.*)", "destination": "/index.html"}], "installCommand": "npm ci --prefer-offline --no-audit --no-fund"}
+{"version": 2, "buildCommand": "npx vite build", "outputDirectory": "dist/public", "rewrites": [{"source": "/(.*)", "destination": "/index.html"}], "installCommand": "npm install --legacy-peer-deps"}
