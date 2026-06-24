@@ -9,38 +9,27 @@ import GraphicDesignModule from "./pages/modules/GraphicDesignModule";
 import Design3DModule from "./pages/modules/Design3DModule";
 import DramaModule from "./pages/modules/DramaModule";
 import CanvasModule from "./pages/modules/CanvasModule";
+import MusicModule from "./pages/modules/MusicModule";
 
-// Courses
+// Teacher - 教学管理
 import CourseList from "./pages/courses/CourseList";
 import CourseDetail from "./pages/courses/CourseDetail";
 import AssignmentList from "./pages/courses/AssignmentList";
+import TeacherStudents from "./pages/courses/TeacherStudents";
+
+// Student - 我的学习
+import StudentCourseList from "./pages/courses/StudentCourseList";
+import StudentAssignments from "./pages/courses/StudentAssignments";
 
 // Gallery
 import Gallery from "./pages/gallery/Gallery";
 
+// Tasks
+import TaskCenter from "./pages/TaskCenter";
+
 // Recharge
 import RechargeCenter from "./pages/recharge/RechargeCenter";
 import Transactions from "./pages/recharge/Transactions";
-
-// Student management placeholder
-import { Users } from "lucide-react";
-import AppLayout from "./components/layout/AppLayout";
-
-function StudentManagement() {
-  return (
-    <AppLayout title="学生管理">
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="text-center py-20">
-          <Users className="w-12 h-12 text-[#333] mx-auto mb-3" />
-          <p className="text-sm text-[#666]">学生管理功能开发中</p>
-          <p className="text-xs text-[#a0a0a0] mt-1">
-            将在后续版本中上线
-          </p>
-        </div>
-      </div>
-    </AppLayout>
-  );
-}
 
 export default function App() {
   return (
@@ -49,21 +38,35 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
 
-      {/* Creation Modules */}
+      {/* Creation Modules - 老师和学生都可以用 */}
       <Route path="/module/copywriting" element={<CopywritingModule />} />
       <Route path="/module/graphic" element={<GraphicDesignModule />} />
       <Route path="/module/3d" element={<Design3DModule />} />
       <Route path="/module/drama" element={<DramaModule />} />
       <Route path="/module/canvas" element={<CanvasModule />} />
+      <Route path="/module/music" element={<MusicModule />} />
 
-      {/* Course Management */}
-      <Route path="/courses" element={<CourseList />} />
+      {/* Teacher Routes - 教学管理（老师专用） */}
+      <Route path="/teacher/courses" element={<CourseList />} />
+      <Route path="/teacher/courses/:id" element={<CourseDetail />} />
+      <Route path="/teacher/assignments" element={<AssignmentList />} />
+      <Route path="/teacher/students" element={<TeacherStudents />} />
+
+      {/* Student Routes - 我的学习（学生视角） */}
+      <Route path="/my/courses" element={<StudentCourseList />} />
+      <Route path="/my/assignments" element={<StudentAssignments />} />
+
+      {/* Legacy redirects - 兼容旧路由 */}
+      <Route path="/courses" element={<StudentCourseList />} />
       <Route path="/courses/:id" element={<CourseDetail />} />
-      <Route path="/assignments" element={<AssignmentList />} />
-      <Route path="/students" element={<StudentManagement />} />
+      <Route path="/assignments" element={<StudentAssignments />} />
+      <Route path="/students" element={<TeacherStudents />} />
 
       {/* Gallery */}
       <Route path="/gallery" element={<Gallery />} />
+
+      {/* Tasks */}
+      <Route path="/tasks" element={<TaskCenter />} />
 
       {/* Recharge */}
       <Route path="/recharge" element={<RechargeCenter />} />

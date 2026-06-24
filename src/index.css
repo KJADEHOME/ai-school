@@ -4,34 +4,54 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 63%;
-    --accent: 0 0% 12%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
+    /* === 天空蓝+治愈系明亮色调 === */
+    --background: 210 40% 97%;
+    --foreground: 210 30% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 30% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 30% 18%;
+    --primary: 210 80% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 30% 95%;
+    --secondary-foreground: 210 30% 18%;
+    --muted: 210 25% 94%;
+    --muted-foreground: 210 15% 50%;
+    --accent: 210 30% 95%;
+    --accent-foreground: 210 30% 18%;
+    --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 16%;
-    --input: 0 0% 12%;
-    --ring: 160 84% 39%;
-    --radius: 0.625rem;
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 160 84% 39%;
+    --border: 210 30% 90%;
+    --input: 210 30% 92%;
+    --ring: 210 80% 58%;
+    --radius: 0.75rem;
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 210 30% 25%;
+    --sidebar-primary: 210 80% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 16%;
-    --sidebar-ring: 160 84% 39%;
+    --sidebar-accent: 210 30% 95%;
+    --sidebar-accent-foreground: 210 30% 25%;
+    --sidebar-border: 210 30% 90%;
+    --sidebar-ring: 210 80% 58%;
+
+    /* 天空蓝情绪色彩 */
+    --sky-blue: #4A90E2;
+    --sky-light: #6BA3E0;
+    --sky-pale: #E8F0FE;
+    --cloud-white: #F8FAFF;
+    --warm-sun: #FFD166;
+    --soft-green: #52B788;
+    --gentle-pink: #F4A3BB;
+    --calm-purple: #A78BFA;
+
+    /* 背景色 */
+    --color-bg: #F0F5FB;
+    --color-bg-card: #FFFFFF;
+    --color-bg-hover: #E8F0FE;
+    --color-border: rgba(74, 144, 226, 0.15);
+    --color-text: #1E293B;
+    --color-text-secondary: #64748B;
+    --color-text-dim: #94A3B8;
   }
 }
 
@@ -40,7 +60,8 @@
     @apply border-border;
   }
   html, body, #root {
-    @apply bg-background text-foreground;
+    background-color: var(--color-bg);
+    color: var(--color-text);
     height: 100%;
     margin: 0;
     padding: 0;
@@ -62,48 +83,61 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #333;
+    background: #CBD5E1;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #444;
+    background: #94A3B8;
   }
 }
 
 /* Module accent colors */
 @layer base {
-  .module-copywriting { --module-color: #10b981; --module-bg: rgba(16,185,129,0.1); }
-  .module-graphic { --module-color: #8b5cf6; --module-bg: rgba(139,92,246,0.1); }
-  .module-3d { --module-color: #06b6d4; --module-bg: rgba(6,182,212,0.1); }
-  .module-drama { --module-color: #f59e0b; --module-bg: rgba(245,158,11,0.1); }
-  .module-canvas { --module-color: #ec4899; --module-bg: rgba(236,72,153,0.1); }
-  .module-course { --module-color: #3b82f6; --module-bg: rgba(59,130,246,0.1); }
+  .module-voice { --module-color: #52B788; --module-bg: rgba(82,183,136,0.08); }
+  .module-image { --module-color: #A78BFA; --module-bg: rgba(167,139,250,0.08); }
+  .module-3d { --module-color: #4A90E2; --module-bg: rgba(74,144,226,0.08); }
+  .module-drama { --module-color: #F4A3BB; --module-bg: rgba(244,163,187,0.08); }
+  .module-canvas { --module-color: #F472B6; --module-bg: rgba(244,114,182,0.08); }
+  .module-course { --module-color: #4A90E2; --module-bg: rgba(74,144,226,0.08); }
 }
 
 /* Animations */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px var(--module-color, #10b981), 0 0 10px var(--module-color, #10b981); }
-  50% { box-shadow: 0 0 10px var(--module-color, #10b981), 0 0 20px var(--module-color, #10b981); }
+  0%, 100% { box-shadow: 0 0 5px var(--module-color, #4A90E2), 0 0 10px var(--module-color, #4A90E2); }
+  50% { box-shadow: 0 0 10px var(--module-color, #4A90E2), 0 0 20px var(--module-color, #4A90E2); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-8px); }
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.3s ease-out forwards;
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
 /* Particle canvas */
@@ -117,16 +151,42 @@
   z-index: 0;
 }
 
-/* Glass effect */
-.glass {
-  background: rgba(10, 10, 10, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* Glass effect - light version */
+.glass-light {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-/* Input focus ring per module */
-.focus-ring-copywriting:focus { box-shadow: 0 0 0 2px rgba(16,185,129,0.3); border-color: #10b981; }
-.focus-ring-graphic:focus { box-shadow: 0 0 0 2px rgba(139,92,246,0.3); border-color: #8b5cf6; }
-.focus-ring-3d:focus { box-shadow: 0 0 0 2px rgba(6,182,212,0.3); border-color: #06b6d4; }
-.focus-ring-drama:focus { box-shadow: 0 0 0 2px rgba(245,158,11,0.3); border-color: #f59e0b; }
-.focus-ring-canvas:focus { box-shadow: 0 0 0 2px rgba(236,72,153,0.3); border-color: #ec4899; }
+/* Sky blue gradient backgrounds */
+.bg-sky-gradient {
+  background: linear-gradient(135deg, #E8F0FE 0%, #DBEAFE 30%, #F0F7FF 60%, #EFF6FF 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 20s ease infinite;
+}
+
+.bg-cloud-gradient {
+  background: linear-gradient(180deg, #F8FAFF 0%, #F0F5FB 50%, #E8F0FE 100%);
+}
+
+/* Mood selector buttons */
+.mood-btn {
+  transition: all 0.3s ease;
+}
+.mood-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+}
+.mood-btn.active {
+  box-shadow: 0 4px 20px rgba(74, 144, 226, 0.25);
+}
+
+/* Chat bubble style */
+.chat-bubble-healing {
+  border-radius: 20px;
+  border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-user {
+  border-radius: 20px;
+  border-bottom-right-radius: 4px;
+}

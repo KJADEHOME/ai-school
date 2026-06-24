@@ -9,6 +9,9 @@ import {
   ChevronRight,
   GraduationCap,
   Search,
+  MoreHorizontal,
+  Clock,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/components/layout/AppLayout";
@@ -17,12 +20,13 @@ interface Course {
   id: string;
   name: string;
   description: string;
-  teacher: string;
   students: number;
   assignments: number;
+  completedCount: number;
   color: string;
   status: "active" | "archived";
   updatedAt: string;
+  code: string;
 }
 
 const mockCourses: Course[] = [
@@ -30,53 +34,50 @@ const mockCourses: Course[] = [
     id: "1",
     name: "数字媒体创作",
     description: "学习使用AI工具进行数字内容创作，包括文案、图像和视频",
-    teacher: "张教授",
     students: 45,
     assignments: 6,
-    color: "#10b981",
+    completedCount: 4,
+    color: "#52B788",
     status: "active",
     updatedAt: "2024-01-15",
+    code: "DMC-2024-01",
   },
   {
     id: "2",
     name: "视觉传达设计",
     description: "探索平面设计与AI辅助创作的结合",
-    teacher: "李老师",
     students: 32,
     assignments: 4,
-    color: "#8b5cf6",
+    completedCount: 3,
+    color: "#A78BFA",
     status: "active",
     updatedAt: "2024-01-14",
+    code: "VCD-2024-02",
   },
   {
     id: "3",
     name: "短视频制作",
     description: "从脚本到成片的完整短剧制作流程",
-    teacher: "王老师",
     students: 28,
     assignments: 5,
-    color: "#f59e0b",
+    completedCount: 2,
+    color: "#FFD166",
     status: "active",
     updatedAt: "2024-01-13",
+    code: "SVM-2024-03",
   },
   {
     id: "4",
     name: "3D建模基础",
     description: "3D设计与渲染入门课程",
-    teacher: "赵教授",
     students: 20,
     assignments: 3,
-    color: "#06b6d4",
+    completedCount: 1,
+    color: "#4A90E2",
     status: "active",
     updatedAt: "2024-01-10",
+    code: "3DM-2024-04",
   },
-];
-
-const gradients = [
-  "from-emerald-500/20 to-teal-500/10",
-  "from-violet-500/20 to-purple-500/10",
-  "from-amber-500/20 to-orange-500/10",
-  "from-cyan-500/20 to-blue-500/10",
 ];
 
 export default function CourseList() {
@@ -89,10 +90,13 @@ export default function CourseList() {
 
   const filtered = courses.filter((c) => {
     if (filter !== "all" && c.status !== filter) return false;
-    if (searchQuery && !c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      return false;
+    if (searchQuery && !c.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
+
+  const totalStudents = courses.reduce((sum, c) => sum + c.students, 0);
+  const totalAssignments = courses.reduce((sum, c) => sum + c.assignments, 0);
+  const activeCourses = courses.filter((c) => c.status === "active").length;
 
   const handleCreateCourse = () => {
     if (!newCourse.name.trim()) return;
@@ -102,22 +106,44 @@ export default function CourseList() {
 
   return (
     <AppLayout title="我的课程">
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-semibold text-white">我的课程</h1>
-            <p className="text-sm text-[#a0a0a0] mt-0.5">
-              管理你的课程、作业和学生
+            <h1 className="text-xl font-semibold" style={{ color: "var(--color-text)" }}>课程管理</h1>
+            <p className="text-xs mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
+              创建和管理你的教学课程
             </p>
           </div>
           <button
             onClick={() => setShowNewForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#3b82f6] hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium text-white transition-all hover:scale-105"
+            style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)", boxShadow: "0 4px 12px rgba(74,144,226,0.25)" }}
           >
             <Plus className="w-4 h-4" />
             创建课程
           </button>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {[
+            { label: "活跃课程", value: activeCourses, icon: BookOpen, color: "#4A90E2" },
+            { label: "学生总数", value: totalStudents, icon: Users, color: "#52B788" },
+            { label: "作业总数", value: totalAssignments, icon: FileText, color: "#A78BFA" },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-xl p-4 border bg-white" style={{ borderColor: "rgba(74,144,226,0.08)" }}>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${stat.color}15` }}>
+                  <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
+                </div>
+                <div>
+                  <p className="text-[11px]" style={{ color: "var(--color-text-dim)" }}>{stat.label}</p>
+                  <p className="text-lg font-bold" style={{ color: stat.color }}>{stat.value}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Filters & Search */}
@@ -132,24 +158,35 @@ export default function CourseList() {
                 key={f.id}
                 onClick={() => setFilter(f.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs transition-all",
+                  "px-3 py-1.5 rounded-xl text-xs font-medium transition-all",
                   filter === f.id
-                    ? "bg-[#3b82f6]/20 text-[#3b82f6] border border-[#3b82f6]/30"
-                    : "bg-[#141414] text-[#a0a0a0] border border-[#2a2a2a] hover:border-[#333]"
+                    ? "text-white shadow-sm"
+                    : "border hover:border-[#4A90E2]30"
                 )}
+                style={
+                  filter === f.id
+                    ? { background: "linear-gradient(135deg, #4A90E2, #6BA3E0)" }
+                    : { background: "white", borderColor: "rgba(74,144,226,0.12)", color: "var(--color-text-secondary)" }
+                }
               >
                 {f.label}
               </button>
             ))}
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--color-text-dim)" }} />
             <input
               type="text"
               placeholder="搜索课程..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-[#141414] border border-[#2a2a2a] rounded-lg text-sm text-white placeholder:text-[#666] outline-none focus:border-[#3b82f6]/50 w-64 transition-all"
+              className="pl-9 pr-4 py-2 rounded-xl text-xs border outline-none focus:ring-2 transition-all"
+              style={{
+                background: "white",
+                borderColor: "rgba(74,144,226,0.15)",
+                color: "var(--color-text)",
+                width: "220px",
+              }}
             />
           </div>
         </div>
@@ -159,49 +196,54 @@ export default function CourseList() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-[#141414] border border-[#2a2a2a] rounded-xl"
+            className="mb-6 p-5 rounded-2xl border bg-white"
+            style={{ borderColor: "rgba(74,144,226,0.15)" }}
           >
-            <h3 className="text-sm font-medium text-white mb-3">创建新课程</h3>
+            <h3 className="text-sm font-medium mb-3" style={{ color: "var(--color-text)" }}>创建新课程</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-xs text-[#a0a0a0] mb-1 block">
-                  课程名称
-                </label>
+                <label className="text-xs mb-1 block" style={{ color: "var(--color-text-secondary)" }}>课程名称</label>
                 <input
                   type="text"
                   value={newCourse.name}
-                  onChange={(e) =>
-                    setNewCourse({ ...newCourse, name: e.target.value })
-                  }
+                  onChange={(e) => setNewCourse({ ...newCourse, name: e.target.value })}
                   placeholder="输入课程名称"
-                  className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg text-sm text-white placeholder:text-[#666] outline-none focus:border-[#3b82f6]/50"
+                  className="w-full px-3 py-2 rounded-xl text-xs border outline-none focus:ring-2 transition-all"
+                  style={{
+                    background: "rgba(248,250,255,0.8)",
+                    borderColor: "rgba(74,144,226,0.15)",
+                    color: "var(--color-text)",
+                  }}
                 />
               </div>
               <div>
-                <label className="text-xs text-[#a0a0a0] mb-1 block">
-                  课程描述
-                </label>
+                <label className="text-xs mb-1 block" style={{ color: "var(--color-text-secondary)" }}>课程描述</label>
                 <input
                   type="text"
                   value={newCourse.description}
-                  onChange={(e) =>
-                    setNewCourse({ ...newCourse, description: e.target.value })
-                  }
+                  onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
                   placeholder="简要描述课程内容"
-                  className="w-full px-3 py-2 bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg text-sm text-white placeholder:text-[#666] outline-none focus:border-[#3b82f6]/50"
+                  className="w-full px-3 py-2 rounded-xl text-xs border outline-none focus:ring-2 transition-all"
+                  style={{
+                    background: "rgba(248,250,255,0.8)",
+                    borderColor: "rgba(74,144,226,0.15)",
+                    color: "var(--color-text)",
+                  }}
                 />
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCreateCourse}
-                className="px-4 py-2 bg-[#3b82f6] hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white transition-all hover:scale-105"
+                style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)" }}
               >
                 创建
               </button>
               <button
                 onClick={() => setShowNewForm(false)}
-                className="px-4 py-2 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] text-[#a0a0a0] rounded-lg text-sm transition-colors"
+                className="px-4 py-2 rounded-xl text-xs transition-all"
+                style={{ background: "rgba(248,250,255,0.8)", border: "1px solid rgba(74,144,226,0.15)", color: "var(--color-text-secondary)" }}
               >
                 取消
               </button>
@@ -210,37 +252,43 @@ export default function CourseList() {
         )}
 
         {/* Course Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((course, index) => (
             <motion.div
               key={course.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
+              transition={{ delay: index * 0.06 }}
             >
               <div
-                className="bg-[#141414] border border-[#2a2a2a] hover:border-[#333] rounded-xl overflow-hidden transition-all hover:-translate-y-0.5 cursor-pointer group"
-                onClick={() => navigate(`/courses/${course.id}`)}
+                className="rounded-2xl border bg-white overflow-hidden transition-all hover:-translate-y-0.5 cursor-pointer group"
+                style={{ borderColor: "rgba(74,144,226,0.08)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = `${course.color}30`;
+                  e.currentTarget.style.boxShadow = `0 6px 20px ${course.color}10`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(74,144,226,0.08)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+                onClick={() => navigate(`/teacher/courses/${course.id}`)}
               >
                 {/* Cover */}
-                <div
-                  className={cn(
-                    "h-24 bg-gradient-to-r flex items-center justify-center relative",
-                    gradients[index % gradients.length]
-                  )}
-                >
-                  <div className="absolute inset-0 bg-[#0a0a0a]/30" />
-                  <BookOpen
-                    className="w-10 h-10 relative z-10"
-                    style={{ color: course.color }}
-                  />
-                  <div className="absolute top-3 right-3 z-10">
+                <div className="h-24 flex items-center justify-center relative" style={{ background: `linear-gradient(135deg, ${course.color}18, ${course.color}08)` }}>
+                  <BookOpen className="w-10 h-10 relative z-10" style={{ color: course.color }} />
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10px]"
+                      style={{ background: `${course.color}15`, color: course.color, border: `1px solid ${course.color}25` }}
+                    >
+                      {course.code}
+                    </span>
                     <span
                       className={cn(
                         "px-2 py-0.5 rounded-full text-[10px]",
                         course.status === "active"
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : "bg-[#2a2a2a] text-[#666]"
+                          ? "bg-green-50 text-green-600"
+                          : "bg-gray-100 text-gray-400"
                       )}
                     >
                       {course.status === "active" ? "进行中" : "已归档"}
@@ -250,33 +298,57 @@ export default function CourseList() {
 
                 {/* Info */}
                 <div className="p-4">
-                  <h3 className="text-sm font-medium text-white mb-1 group-hover:text-[#3b82f6] transition-colors">
+                  <h3 className="text-sm font-semibold mb-1 group-hover:text-[#4A90E2] transition-colors" style={{ color: "var(--color-text)" }}>
                     {course.name}
                   </h3>
-                  <p className="text-xs text-[#a0a0a0] mb-3 line-clamp-2">
+                  <p className="text-xs mb-3 line-clamp-2" style={{ color: "var(--color-text-secondary)" }}>
                     {course.description}
                   </p>
 
-                  <div className="flex items-center gap-4 text-xs text-[#666]">
-                    <span className="flex items-center gap-1">
-                      <GraduationCap className="w-3.5 h-3.5" />
-                      {course.teacher}
-                    </span>
-                    <span className="flex items-center gap-1">
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 mb-3">
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--color-text-dim)" }}>
                       <Users className="w-3.5 h-3.5" />
-                      {course.students}
+                      {course.students} 学生
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--color-text-dim)" }}>
                       <FileText className="w-3.5 h-3.5" />
-                      {course.assignments}
+                      {course.assignments} 作业
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--color-text-dim)" }}>
+                      <Clock className="w-3.5 h-3.5" />
+                      {course.updatedAt}
                     </span>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-[#1a1a1a] flex items-center justify-between">
-                    <span className="text-[10px] text-[#666]">
-                      更新于 {course.updatedAt}
+                  {/* Progress Bar */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px]" style={{ color: "var(--color-text-dim)" }}>课程进度</span>
+                      <span className="text-[10px] font-medium" style={{ color: course.color }}>
+                        {Math.round((course.completedCount / course.assignments) * 100)}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${(course.completedCount / course.assignments) * 100}%`,
+                          background: `linear-gradient(90deg, ${course.color}, ${course.color}88)`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="pt-3 flex items-center justify-between" style={{ borderTop: "1px solid rgba(74,144,226,0.06)" }}>
+                    <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--color-text-dim)" }}>
+                      <TrendingUp className="w-3 h-3" />
+                      {course.completedCount}/{course.assignments} 已批改
                     </span>
-                    <ChevronRight className="w-4 h-4 text-[#666] group-hover:text-white transition-colors" />
+                    <button className="p-1.5 rounded-lg hover:bg-[#E8F0FE] transition-colors" style={{ color: "var(--color-text-dim)" }}>
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -286,9 +358,10 @@ export default function CourseList() {
 
         {/* Empty State */}
         {filtered.length === 0 && (
-          <div className="text-center py-20">
-            <BookOpen className="w-12 h-12 text-[#333] mx-auto mb-3" />
-            <p className="text-sm text-[#666]">暂无课程</p>
+          <div className="text-center py-20 rounded-2xl border bg-white" style={{ borderColor: "rgba(74,144,226,0.08)" }}>
+            <BookOpen className="w-12 h-12 mx-auto mb-3" style={{ color: "#CBD5E1" }} />
+            <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>暂无课程</p>
+            <p className="text-xs mt-1" style={{ color: "var(--color-text-dim)" }}>点击「创建课程」开始</p>
           </div>
         )}
       </div>

@@ -8,22 +8,24 @@ interface AppLayoutProps {
   children: ReactNode;
   title?: string;
   fullWidth?: boolean;
+  showSidebar?: boolean;
 }
 
 export default function AppLayout({
   children,
   title,
   fullWidth = false,
+  showSidebar = true,
 }: AppLayoutProps) {
   const { sidebarCollapsed } = useAppStore();
 
   return (
-    <div className="h-full bg-[#0a0a0a]">
-      <Sidebar />
+    <div className="h-full" style={{ background: "var(--color-bg)" }}>
+      {showSidebar && <Sidebar />}
       <div
         className={cn(
           "h-full flex flex-col transition-all duration-300",
-          sidebarCollapsed ? "ml-[60px]" : "ml-[240px]"
+          showSidebar ? (sidebarCollapsed ? "ml-[60px]" : "ml-[230px]") : ""
         )}
       >
         {!fullWidth && <TopBar title={title} />}

@@ -5,7 +5,10 @@ export type ModuleType =
   | "graphic"
   | "3d"
   | "drama"
-  | "canvas";
+  | "canvas"
+  | "music";
+
+export type UserRole = "student" | "teacher" | "admin";
 
 interface AppState {
   // Sidebar
@@ -19,6 +22,11 @@ interface AppState {
   // Search
   globalSearch: string;
   setGlobalSearch: (s: string) => void;
+
+  // Role management
+  userRole: UserRole;
+  setUserRole: (role: UserRole) => void;
+  toggleRole: () => void;
 
   // Theme (for future use)
   theme: "dark";
@@ -34,6 +42,13 @@ export const useAppStore = create<AppState>((set) => ({
 
   globalSearch: "",
   setGlobalSearch: (s) => set({ globalSearch: s }),
+
+  userRole: "student",
+  setUserRole: (role) => set({ userRole: role }),
+  toggleRole: () =>
+    set((state) => ({
+      userRole: state.userRole === "student" ? "teacher" : "student",
+    })),
 
   theme: "dark",
 }));

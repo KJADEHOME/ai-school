@@ -37,18 +37,18 @@ function TextNode({ data, selected }: NodeProps<Node<{ label: string; content?: 
     <div
       className={cn(
         "min-w-[180px] bg-[#141414] border rounded-lg overflow-hidden transition-all",
-        selected ? "border-[#ec4899] ring-1 ring-[#ec4899]/30" : "border-[#2a2a2a]"
+        selected ? "border-[#fd79a8] ring-1 ring-[#fd79a8]/30" : "border-[#2a2a2a]"
       )}
     >
-      <Handle type="target" position={Position.Top} className="!bg-[#ec4899]" />
+      <Handle type="target" position={Position.Top} className="!bg-[#fd79a8]" />
       <div className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] border-b border-[#2a2a2a]">
-        <Type className="w-3.5 h-3.5 text-[#ec4899]" />
+        <Type className="w-3.5 h-3.5 text-[#fd79a8]" />
         <span className="text-xs font-medium text-white">{data.label}</span>
       </div>
       <div className="px-3 py-2">
         <p className="text-xs text-[#a0a0a0]">{data.content || "输入文本内容..."}</p>
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-[#ec4899]" />
+      <Handle type="source" position={Position.Bottom} className="!bg-[#fd79a8]" />
     </div>
   );
 }
@@ -149,7 +149,7 @@ const nodeTypes = {
 };
 
 const toolbarItems = [
-  { type: "text", label: "文本", icon: Type, color: "#ec4899" },
+  { type: "text", label: "文本", icon: Type, color: "#fd79a8" },
   { type: "image", label: "图像", icon: Image, color: "#8b5cf6" },
   { type: "video", label: "视频", icon: Video, color: "#f59e0b" },
   { type: "ai", label: "AI处理", icon: Sparkles, color: "#10b981" },
@@ -293,7 +293,7 @@ export default function CanvasModule() {
               className="!bg-[#141414] !border-[#2a2a2a]"
               nodeColor={(node) => {
                 const colors: Record<string, string> = {
-                  text: "#ec4899",
+                  text: "#fd79a8",
                   image: "#8b5cf6",
                   video: "#f59e0b",
                   ai: "#10b981",

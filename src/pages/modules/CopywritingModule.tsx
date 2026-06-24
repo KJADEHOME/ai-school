@@ -175,32 +175,51 @@ export default function CopywritingModule() {
     const historyMessages = (currentConv?.messages ?? [])
       .map((m) => ({ role: m.role, content: m.content }));
 
-    // 构建system prompt根据子功能
+    // 构建system prompt - 情绪疗愈方向
     const systemPrompts: Record<SubMode, string> = {
       marketing:
-        "你是一位资深营销策划专家，擅长校园营销、品牌推广、活动策划。请用中文回复，输出要有清晰的结构和可执行的方案。",
+        "你是一位懂情绪疗愈的AI创作伙伴。用户可能带着情绪来找你——焦虑、压力、迷茫。你的回复要先理解和接纳他们的情绪，然后用温暖的语言引导他们把情绪转化为创意。营销策划不只是方案，更是一次情绪梳理。请用中文回复，语气温暖、真诚。",
       ppt:
-        "你是一位专业的PPT设计师和演讲教练，擅长大纲规划、页面设计、演讲稿撰写。请用中文回复，给出结构清晰、视觉友好的建议。",
+        "你是一位懂情绪疗愈的AI创作伙伴。用户可能因为学业压力、演讲焦虑来找你。你的回复要先安抚他们的情绪，然后帮他们构建自信、清晰的PPT内容。记住，好的PPT不只是排版，更是讲述自己故事的过程。请用中文回复，语气温暖、鼓励。",
       copywriting:
-        "你是一位资深文案写手，擅长公众号推文、广告文案、新闻稿、品牌故事。请用中文回复，文案要有感染力和传播力。",
+        "你是一位懂情绪疗愈的AI创作伙伴。用户可能正在经历情绪波动，想通过文字来表达和释放。你的回复要先感受他们的情绪，然后引导他们把内心感受变成优美的文字。文案创作本身就是一种情绪疗愈。请用中文回复，语气温暖、有共情力。",
     };
 
+    // DeepSeek API Key - 从环境变量读取
+    const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || "";
+
+    if (!DEEPSEEK_API_KEY) {
+      onChunk("\n\n⚠️ API Key 未配置，请在 .env 文件中设置 VITE_DEEPSEEK_API_KEY");
+      onComplete();
+      return;
+    }
+
     try {
-      const response = await fetch("/api/deepseek/chat", {
+      const response = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+        },
         body: JSON.stringify({
-          messages: [...historyMessages, { role: "user", content }],
-          systemPrompt: systemPrompts[activeSubMode],
+          model: "deepseek-chat",
+          messages: [
+            { role: "system", content: systemPrompts[activeSubMode] },
+            ...historyMessages,
+            { role: "user", content },
+          ],
+          stream: true,
+          temperature: 0.7,
+          max_tokens: 4096,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorText = await response.text().catch(() => response.statusText);
         const assistantMsg = {
           id: (Date.now() + 1).toString(),
           role: "assistant" as const,
-          content: `❌ 请求失败：${errorData.error ?? response.statusText}\n\n请检查 DeepSeek API Key 是否已配置。`,
+          content: `❌ DeepSeek API 请求失败 (${response.status})\n\n${errorText}\n\n请检查 API Key 是否有效或额度是否充足。`,
           timestamp: Date.now(),
         };
         setConversations((prev) =>

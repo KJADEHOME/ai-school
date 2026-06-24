@@ -113,7 +113,7 @@ export default function Design3DModule() {
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium transition-all",
                   generateMode === "text"
-                    ? "bg-[#06b6d4]/20 text-[#06b6d4] border border-[#06b6d4]/30"
+                    ? "bg-[#74b9ff]/20 text-[#74b9ff] border border-[#74b9ff]/30"
                     : "text-[#a0a0a0] hover:text-white"
                 )}
               >
@@ -128,7 +128,7 @@ export default function Design3DModule() {
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium transition-all",
                   generateMode === "image"
-                    ? "bg-[#06b6d4]/20 text-[#06b6d4] border border-[#06b6d4]/30"
+                    ? "bg-[#74b9ff]/20 text-[#74b9ff] border border-[#74b9ff]/30"
                     : "text-[#a0a0a0] hover:text-white"
                 )}
               >
@@ -151,7 +151,7 @@ export default function Design3DModule() {
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="例如：一只可爱的机器猫，圆润的身体，金属质感..."
                   rows={4}
-                  className="w-full px-3 py-2.5 bg-[#141414] border border-[#2a2a2a] rounded-lg text-sm text-white placeholder:text-[#666] outline-none focus:border-[#06b6d4]/50 focus:ring-1 focus:ring-[#06b6d4]/20 resize-none transition-all"
+                  className="w-full px-3 py-2.5 bg-[#141414] border border-[#2a2a2a] rounded-lg text-sm text-white placeholder:text-[#666] outline-none focus:border-[#74b9ff]/50 focus:ring-1 focus:ring-[#74b9ff]/20 resize-none transition-all"
                 />
                 <p className="text-[10px] text-[#666] mt-1.5">
                   建议包含：主体、风格、材质、颜色等描述
@@ -189,9 +189,9 @@ export default function Design3DModule() {
                 ) : (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-40 border-2 border-dashed border-[#2a2a2a] hover:border-[#06b6d4]/50 rounded-lg flex flex-col items-center justify-center transition-all group"
+                    className="w-full h-40 border-2 border-dashed border-[#2a2a2a] hover:border-[#74b9ff]/50 rounded-lg flex flex-col items-center justify-center transition-all group"
                   >
-                    <Upload className="w-8 h-8 text-[#333] group-hover:text-[#06b6d4] transition-colors" />
+                    <Upload className="w-8 h-8 text-[#333] group-hover:text-[#74b9ff] transition-colors" />
                     <p className="text-xs text-[#666] group-hover:text-[#a0a0a0] mt-2">
                       点击上传图片
                     </p>
@@ -216,7 +216,7 @@ export default function Design3DModule() {
                     className={cn(
                       "p-2.5 rounded-lg text-left transition-all border",
                       selectedStyle === style.id
-                        ? "bg-[#06b6d4]/10 border-[#06b6d4]/40"
+                        ? "bg-[#74b9ff]/10 border-[#74b9ff]/40"
                         : "bg-[#141414] border-[#2a2a2a] hover:border-[#333]"
                     )}
                   >
@@ -261,7 +261,7 @@ export default function Design3DModule() {
                 "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all",
                 (generateMode === "text" && prompt.trim()) ||
                   (generateMode === "image" && uploadedImage)
-                  ? "bg-[#06b6d4] hover:bg-[#06b6d4]/90 text-white"
+                  ? "bg-[#74b9ff] hover:bg-[#74b9ff]/90 text-white"
                   : "bg-[#2a2a2a] text-[#666] cursor-not-allowed"
               )}
             >
@@ -288,8 +288,8 @@ export default function Design3DModule() {
                   key={item.id}
                   className="w-full flex items-center gap-2.5 p-2 rounded-lg bg-[#141414] hover:bg-[#1a1a1a] text-left transition-all group"
                 >
-                  <div className="w-8 h-8 rounded bg-[#06b6d4]/20 flex items-center justify-center flex-shrink-0">
-                    <Box className="w-4 h-4 text-[#06b6d4]" />
+                  <div className="w-8 h-8 rounded bg-[#74b9ff]/20 flex items-center justify-center flex-shrink-0">
+                    <Box className="w-4 h-4 text-[#74b9ff]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-white truncate">{item.prompt}</p>
@@ -375,9 +375,9 @@ export default function Design3DModule() {
             {isGenerating ? (
               <div className="text-center relative z-10">
                 <div className="relative w-24 h-24 mx-auto mb-4">
-                  <div className="absolute inset-0 rounded-xl border-2 border-[#06b6d4]/20" />
+                  <div className="absolute inset-0 rounded-xl border-2 border-[#74b9ff]/20" />
                   <motion.div
-                    className="absolute inset-0 rounded-xl border-2 border-transparent border-t-[#06b6d4]"
+                    className="absolute inset-0 rounded-xl border-2 border-transparent border-t-[#74b9ff]"
                     animate={{ rotate: 360 }}
                     transition={{
                       duration: 1.5,
@@ -385,7 +385,7 @@ export default function Design3DModule() {
                       ease: "linear",
                     }}
                   />
-                  <Box className="absolute inset-0 m-auto w-10 h-10 text-[#06b6d4]" />
+                  <Box className="absolute inset-0 m-auto w-10 h-10 text-[#74b9ff]" />
                 </div>
                 <p className="text-white font-medium">
                   {generateMode === "text" ? "正在生成3D模型" : "正在转换3D模型"}
@@ -421,10 +421,10 @@ export default function Design3DModule() {
                       className={cn(
                         "absolute inset-0 flex items-center justify-center border transition-all",
                         viewMode === "wireframe"
-                          ? "bg-transparent border-[#06b6d4]"
+                          ? "bg-transparent border-[#74b9ff]"
                           : viewMode === "texture"
-                            ? "border-[#06b6d4]/60"
-                            : "border-[#06b6d4]/40"
+                            ? "border-[#74b9ff]/60"
+                            : "border-[#74b9ff]/40"
                       )}
                       style={{
                         transform: face.t,
@@ -441,7 +441,7 @@ export default function Design3DModule() {
                       }}
                     >
                       {viewMode === "wireframe" && (
-                        <span className="text-[10px] text-[#06b6d4]/50">
+                        <span className="text-[10px] text-[#74b9ff]/50">
                           {face.label}
                         </span>
                       )}
@@ -475,8 +475,8 @@ export default function Design3DModule() {
               </motion.div>
             ) : (
               <div className="text-center relative z-10">
-                <div className="w-20 h-20 rounded-2xl bg-[#06b6d4]/10 flex items-center justify-center mx-auto mb-4">
-                  <Box className="w-10 h-10 text-[#06b6d4]" />
+                <div className="w-20 h-20 rounded-2xl bg-[#74b9ff]/10 flex items-center justify-center mx-auto mb-4">
+                  <Box className="w-10 h-10 text-[#74b9ff]" />
                 </div>
                 <p className="text-white font-medium">
                   {generateMode === "text"
@@ -508,7 +508,7 @@ export default function Design3DModule() {
                   <Copy className="w-3.5 h-3.5" />
                   复制提示词
                 </button>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#06b6d4] hover:bg-[#06b6d4]/90 text-white text-xs transition-all">
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#74b9ff] hover:bg-[#74b9ff]/90 text-white text-xs transition-all">
                   <Download className="w-3.5 h-3.5" />
                   导出模型
                 </button>
@@ -521,7 +521,7 @@ export default function Design3DModule() {
         <div className="w-[260px] bg-[#0d0d0d] border-l border-[#1a1a1a] flex flex-col">
           <div className="p-4 border-b border-[#1a1a1a]">
             <div className="flex items-center gap-2">
-              <Settings className="w-4 h-4 text-[#06b6d4]" />
+              <Settings className="w-4 h-4 text-[#74b9ff]" />
               <h3 className="text-sm font-medium text-white">模型参数</h3>
             </div>
           </div>
@@ -537,7 +537,7 @@ export default function Design3DModule() {
                     className={cn(
                       "w-full flex items-center gap-2 p-2 rounded-lg text-left text-xs transition-all",
                       mat === "金属"
-                        ? "bg-[#06b6d4]/10 text-[#06b6d4] border border-[#06b6d4]/30"
+                        ? "bg-[#74b9ff]/10 text-[#74b9ff] border border-[#74b9ff]/30"
                         : "bg-[#141414] text-[#a0a0a0] border border-[#2a2a2a] hover:border-[#333]"
                     )}
                   >
@@ -552,7 +552,7 @@ export default function Design3DModule() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs text-[#a0a0a0]">面数</label>
-                <span className="text-xs text-[#06b6d4]">中等</span>
+                <span className="text-xs text-[#74b9ff]">中等</span>
               </div>
               <input
                 type="range"
@@ -560,7 +560,7 @@ export default function Design3DModule() {
                 max={2}
                 step={1}
                 defaultValue={1}
-                className="w-full h-1.5 bg-[#2a2a2a] rounded-full appearance-none cursor-pointer accent-[#06b6d4]"
+                className="w-full h-1.5 bg-[#2a2a2a] rounded-full appearance-none cursor-pointer accent-[#74b9ff]"
               />
               <div className="flex justify-between mt-1">
                 <span className="text-[10px] text-[#666]">低</span>
@@ -581,7 +581,7 @@ export default function Design3DModule() {
                     className={cn(
                       "py-2 rounded-lg text-xs text-center transition-all border",
                       fmt === "GLB"
-                        ? "bg-[#06b6d4]/10 text-[#06b6d4] border-[#06b6d4]/30"
+                        ? "bg-[#74b9ff]/10 text-[#74b9ff] border-[#74b9ff]/30"
                         : "bg-[#141414] text-[#a0a0a0] border-[#2a2a2a] hover:border-[#333]"
                     )}
                   >
@@ -620,8 +620,8 @@ export default function Design3DModule() {
           {/* Model badge */}
           <div className="p-4 border-t border-[#1a1a1a]">
             <div className="flex items-center gap-2 p-2.5 bg-[#141414] border border-[#2a2a2a] rounded-lg">
-              <div className="w-8 h-8 rounded-lg bg-[#06b6d4]/20 flex items-center justify-center">
-                <Box className="w-4 h-4 text-[#06b6d4]" />
+              <div className="w-8 h-8 rounded-lg bg-[#74b9ff]/20 flex items-center justify-center">
+                <Box className="w-4 h-4 text-[#74b9ff]" />
               </div>
               <div>
                 <p className="text-xs text-white">腾讯混元3D</p>
