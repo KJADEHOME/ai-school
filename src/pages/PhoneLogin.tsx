@@ -23,12 +23,17 @@ export default function PhoneLogin() {
   const [code, setCode] = useState("");
   const [countdown, setCountdown] = useState(0);
   const [error, setError] = useState("");
+  const [debugCode, setDebugCode] = useState<string | null>(null);
 
   const sendCode = trpc.sms.sendCode.useMutation({
     onSuccess: (data) => {
       if (data.success) {
         setStep("code");
         setCountdown(data.cooldown || 60);
+        // Show debug code if available (dev/demo mode)
+        if (data.debugCode) {
+          setDebugCode(data.debugCode);
+        }
         const timer = setInterval(() => {
           setCountdown((prev) => {
             if (prev <= 1) { clearInterval(timer); return 0; }
@@ -95,8 +100,8 @@ export default function PhoneLogin() {
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)" }}>
             <Heart className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>心流创坊</h1>
-          <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>AI情绪疗愈创作平台</p>
+          <h1 className="text-xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>SkyVido</h1>
+          <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>AI 创作学习平台</p>
         </div>
 
         {/* Card */}
@@ -176,6 +181,14 @@ export default function PhoneLogin() {
                   </button>
                   <span className="text-xs" style={{ color: "var(--color-text-secondary)" }}>验证码已发送至 {phone.replace(/(\d{3})(\d{4})(\d{4})/, "$1****$3")}</span>
                 </div>
+
+                {/* Demo Mode: Show verification code */}
+                {debugCode && (
+                  <div className="rounded-xl px-3 py-2.5 text-center" style={{ background: "rgba(74,144,226,0.08)", border: "1px solid rgba(74,144,226,0.2)" }}>
+                    <p className="text-[10px] mb-1" style={{ color: "var(--color-text-secondary)" }}>演示模式 · 验证码</p>
+                    <p className="text-lg font-bold tracking-widest" style={{ color: "#4A90E2" }}>{debugCode}</p>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--color-text-secondary)" }}>验证码</label>

@@ -253,7 +253,7 @@ export default function Home() {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
           body: JSON.stringify({
             model: "deepseek-chat",
-            messages: [{ role: "system", content: "你是心流创坊的AI情绪伴侣，一个温暖、有创意的助手。你可以帮用户缓解情绪、激发创作灵感。用简短温暖的语言回复。" }, { role: "user", content: userMsg }],
+            messages: [{ role: "system", content: "你是 SkyVido 的 AI 创作助手，一个专业、有创意的助手。你可以帮助用户完成创作任务、解答学习问题。用简洁专业的语言回复。" }, { role: "user", content: userMsg }],
             stream: false,
           }),
         });
@@ -385,8 +385,8 @@ export default function Home() {
                         <Bot className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">心流伴侣</p>
-                        <p className="text-[10px] text-white/70">AI情绪创作助手</p>
+                        <p className="text-sm font-medium text-white">SkyVido 助手</p>
+                        <p className="text-[10px] text-white/70">AI 创作助手</p>
                       </div>
                     </div>
                     <button onClick={() => setShowChat(false)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
