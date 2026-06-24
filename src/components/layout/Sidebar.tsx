@@ -24,7 +24,6 @@ import {
   Target,
   School,
   UserCircle,
-  Repeat,
 } from "lucide-react";
 
 /* ===== 六大AI创作模块 ===== */
@@ -54,7 +53,7 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { sidebarCollapsed, toggleSidebar, userRole, toggleRole } = useAppStore();
+  const { sidebarCollapsed, toggleSidebar, userRole } = useAppStore();
 
   const isActive = (path: string) => location.pathname === path;
   const isModuleActive = (path: string) => location.pathname.startsWith(path);
@@ -74,8 +73,8 @@ export default function Sidebar() {
           </div>
           {!sidebarCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight" style={{ color: "var(--color-text)" }}>心流创坊</span>
-              <span className="text-[10px] leading-tight" style={{ color: "var(--color-text-dim)" }}>AI情绪疗愈创作</span>
+              <span className="text-sm font-semibold leading-tight" style={{ color: "var(--color-text)" }}>skyvido</span>
+              <span className="text-[10px] leading-tight" style={{ color: "var(--color-text-dim)" }}>AI情绪创作疗愈</span>
             </div>
           )}
         </div>
@@ -145,41 +144,39 @@ export default function Sidebar() {
 
       {/* Bottom Section: Role Switch + User */}
       <div className="p-3 space-y-2" style={{ borderTop: "1px solid rgba(74,144,226,0.08)" }}>
-        {/* Role Switch Button (Demo) */}
+        {/* Role Indicator */}
         {!sidebarCollapsed && (
-          <button
-            onClick={toggleRole}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all hover:scale-[1.02]"
+          <div
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
             style={{
               background: userRole === "teacher" ? "rgba(167,139,250,0.1)" : "rgba(74,144,226,0.08)",
               border: userRole === "teacher" ? "1px solid rgba(167,139,250,0.25)" : "1px solid rgba(74,144,226,0.15)",
               color: userRole === "teacher" ? "#A78BFA" : "#4A90E2",
             }}
           >
-            <Repeat className="w-3.5 h-3.5" />
-            <span className="font-medium">{userRole === "teacher" ? "切换为学生" : "切换为老师"}</span>
+            {userRole === "teacher" ? <School className="w-3.5 h-3.5" /> : <UserCircle className="w-3.5 h-3.5" />}
+            <span className="font-medium">{userRole === "teacher" ? "老师身份" : "学生身份"}</span>
             <span
               className="ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold"
               style={{
                 background: userRole === "teacher" ? "#A78BFA20" : "#4A90E220",
               }}
             >
-              {userRole === "teacher" ? "老师" : "学生"}
+              {userRole === "teacher" ? "TEACHER" : "STUDENT"}
             </span>
-          </button>
+          </div>
         )}
         {sidebarCollapsed && (
-          <button
-            onClick={toggleRole}
-            className="w-full flex justify-center p-2 rounded-xl transition-all hover:scale-105"
+          <div
+            className="w-full flex justify-center p-2 rounded-xl"
             style={{
               background: userRole === "teacher" ? "rgba(167,139,250,0.1)" : "rgba(74,144,226,0.08)",
               color: userRole === "teacher" ? "#A78BFA" : "#4A90E2",
             }}
-            title={userRole === "teacher" ? "切换为学生" : "切换为老师"}
+            title={userRole === "teacher" ? "老师身份" : "学生身份"}
           >
-            <Repeat className="w-4 h-4" />
-          </button>
+            {userRole === "teacher" ? <School className="w-4 h-4" /> : <UserCircle className="w-4 h-4" />}
+          </div>
         )}
 
         {/* User Profile */}

@@ -23,10 +23,9 @@ interface AppState {
   globalSearch: string;
   setGlobalSearch: (s: string) => void;
 
-  // Role management
+  // Role management - 从登录时选择，不再切换
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
-  toggleRole: () => void;
 
   // Theme (for future use)
   theme: "dark";
@@ -43,12 +42,11 @@ export const useAppStore = create<AppState>((set) => ({
   globalSearch: "",
   setGlobalSearch: (s) => set({ globalSearch: s }),
 
-  userRole: "student",
-  setUserRole: (role) => set({ userRole: role }),
-  toggleRole: () =>
-    set((state) => ({
-      userRole: state.userRole === "student" ? "teacher" : "student",
-    })),
+  userRole: (localStorage.getItem("user_role") as UserRole) || "student",
+  setUserRole: (role) => {
+    localStorage.setItem("user_role", role);
+    set({ userRole: role });
+  },
 
   theme: "dark",
 }));
