@@ -1,10 +1,8 @@
 {
   "version": 2,
-  "name": "xinliu-chuangfang",
-  "buildCommand": "npx vite build",
+  "installCommand": null,
+  "buildCommand": null,
   "outputDirectory": "dist/public",
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "framework": null,
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
