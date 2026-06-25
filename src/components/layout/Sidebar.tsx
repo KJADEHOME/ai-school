@@ -74,7 +74,7 @@ export default function Sidebar() {
           {!sidebarCollapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-semibold leading-tight" style={{ color: "var(--color-text)" }}>skyvido</span>
-              <span className="text-[10px] leading-tight" style={{ color: "var(--color-text-dim)" }}>AI情绪创作疗愈</span>
+              <span className="text-[10px] leading-tight" style={{ color: "var(--color-text-dim)" }}>AI 创作创作疗愈</span>
             </div>
           )}
         </div>
