@@ -245,7 +245,7 @@ export default function Home() {
     setChatMessages(prev => [...prev, { role: "user", content: userMsg }]);
     setChatLoading(true);
 
-    // 调用DeepSeek API
+    // 调用 DeepSeek API（流式输出）
     const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
     if (apiKey) {
       try {
@@ -254,18 +254,69 @@ export default function Home() {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
           body: JSON.stringify({
             model: "deepseek-chat",
-            messages: [{ role: "system", content: "你是 SkyVido 的 AI 创作助手，一个专业、有创意的助手。你可以帮助用户完成创作任务、解答学习问题。用简洁专业的语言回复。" }, { role: "user", content: userMsg }],
-            stream: false,
+            messages: [
+              {
+                role: "system",
+                content: `你是 SkyVido（视界）AI 创作学习平台的智能助手。你的特点：
+1. 你由 DeepSeek 大模型驱动，回答要有深度和创意
+2. 平台核心功能：策划文案、平面设计、3D设计、短剧生成、无限画布、音乐创作
+3. 回复要体现专业创作者视角，可以主动引导用户使用平台的创作模块
+4. 用词生动、有温度、不机械，适当使用emoji增加亲和力
+5. 如果用户情绪不好，先共情再引导到创作方向
+6. 保持简洁但信息量大，不要废话`,
+              },
+              { role: "user", content: userMsg }
+            ],
+            stream: true,
           }),
         });
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || "抱歉，我暂时无法回应，你可以试试换个方式表达~";
-        setChatMessages(prev => [...prev, { role: "assistant", content: reply }]);
-      } catch {
-        setChatMessages(prev => [...prev, { role: "assistant", content: "网络有点慢呢，你可以稍后再试，或者换个心情标签开始创作任务~" }]);
+
+        if (!response.ok) throw new Error(`API ${response.status}`);
+
+        // 流式输出
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error("无法读取响应");
+        const decoder = new TextDecoder();
+        let fullContent = "";
+        // 先插入一个空的assistant消息用于流式更新
+        setChatMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          for (const line of chunk.split("\n")) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const data = JSON.parse(line.slice(6));
+                const text = data.choices?.[0]?.delta?.content || "";
+                if (text) {
+                  fullContent += text;
+                  setChatMessages(prev => {
+                    const next = [...prev];
+                    next[next.length - 1] = { ...next[next.length - 1], content: fullContent };
+                    return next;
+                  });
+                }
+              } catch {}
+            }
+          }
+        }
+
+        // 如果最终内容为空
+        setChatMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last.role === "assistant" && !last.content.trim()) {
+            return [...prev.slice(0, -1), { role: "assistant", content: "抱歉，我暂时没有合适的回复，要不我们聊聊你的创作想法？" }];
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error("DeepSeek API error:", err);
+        setChatMessages(prev => [...prev, { role: "assistant", content: "🤔 网络好像有点问题，稍后再试试吧~ 或者你可以直接点击上方的创作模块开始体验！" }]);
       }
     } else {
-      // 演示模式
+      // 无 API Key 时的演示模式
       setTimeout(() => {
         const demoReplies = [
           "我理解你的感受，有时候停下来深呼吸一下会好很多。你想试试用文字来表达当下的心情吗？",
@@ -387,7 +438,7 @@ export default function Home() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-white">SkyVido 助手</p>
-                        <p className="text-[10px] text-white/70">AI 创作助手</p>
+                        <p className="text-[10px] text-white/70">DeepSeek AI 驱动 · 创作助手</p>
                       </div>
                     </div>
                     <button onClick={() => setShowChat(false)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
