@@ -4,54 +4,54 @@
 
 @layer base {
   :root {
-    /* === 天空蓝+治愈系明亮色调 === */
-    --background: 210 40% 97%;
-    --foreground: 210 30% 18%;
-    --card: 0 0% 100%;
-    --card-foreground: 210 30% 18%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 30% 18%;
-    --primary: 210 80% 58%;
+    /* === 温暖天空 · 愉悦舒适色调 === */
+    --background: 40 20% 97%;
+    --foreground: 220 25% 18%;
+    --card: 35 50% 98%;
+    --card-foreground: 220 25% 18%;
+    --popover: 35 50% 98%;
+    --popover-foreground: 220 25% 18%;
+    --primary: 215 70% 56%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 30% 95%;
-    --secondary-foreground: 210 30% 18%;
-    --muted: 210 25% 94%;
-    --muted-foreground: 210 15% 50%;
-    --accent: 210 30% 95%;
-    --accent-foreground: 210 30% 18%;
+    --secondary: 35 15% 92%;
+    --secondary-foreground: 220 25% 18%;
+    --muted: 35 12% 90%;
+    --muted-foreground: 220 10% 50%;
+    --accent: 35 20% 93%;
+    --accent-foreground: 220 25% 18%;
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 30% 90%;
-    --input: 210 30% 92%;
-    --ring: 210 80% 58%;
+    --border: 35 18% 88%;
+    --input: 35 16% 90%;
+    --ring: 215 70% 56%;
     --radius: 0.75rem;
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 210 30% 25%;
-    --sidebar-primary: 210 80% 58%;
+    --sidebar-background: 35 20% 97%;
+    --sidebar-foreground: 220 25% 22%;
+    --sidebar-primary: 215 70% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 30% 95%;
-    --sidebar-accent-foreground: 210 30% 25%;
-    --sidebar-border: 210 30% 90%;
-    --sidebar-ring: 210 80% 58%;
+    --sidebar-accent: 35 15% 93%;
+    --sidebar-accent-foreground: 220 25% 22%;
+    --sidebar-border: 35 15% 90%;
+    --sidebar-ring: 215 70% 56%;
 
-    /* 天空蓝情绪色彩 */
+    /* 温暖天空色彩 */
     --sky-blue: #4A90E2;
     --sky-light: #6BA3E0;
-    --sky-pale: #E8F0FE;
-    --cloud-white: #F8FAFF;
-    --warm-sun: #FFD166;
+    --sky-pale: #E4EEFA;
+    --cloud-white: #FDFAF5;
+    --warm-sun: #f0a84c;
     --soft-green: #52B788;
-    --gentle-pink: #F4A3BB;
+    --gentle-peach: #F4B8A3;
     --calm-purple: #A78BFA;
 
-    /* 背景色 */
-    --color-bg: #F0F5FB;
-    --color-bg-card: #FFFFFF;
-    --color-bg-hover: #E8F0FE;
-    --color-border: rgba(74, 144, 226, 0.15);
-    --color-text: #1E293B;
-    --color-text-secondary: #64748B;
-    --color-text-dim: #94A3B8;
+    /* 背景色 — 暖调奶油底 */
+    --color-bg: #F8F6F2;
+    --color-bg-card: #FFFDF9;
+    --color-bg-hover: #F0EBE3;
+    --color-border: rgba(120, 100, 70, 0.12);
+    --color-text: #2C2C2C;
+    --color-text-secondary: #6B6560;
+    --color-text-dim: #A09890;
   }
 }
 
@@ -158,15 +158,15 @@
   -webkit-backdrop-filter: blur(16px);
 }
 
-/* Sky blue gradient backgrounds */
+/* Sky blue gradient backgrounds — 温暖天空渐变 */
 .bg-sky-gradient {
-  background: linear-gradient(135deg, #E8F0FE 0%, #DBEAFE 30%, #F0F7FF 60%, #EFF6FF 100%);
+  background: linear-gradient(160deg, #DBEAFE 0%, #E4EEFA 25%, #F2EDE5 55%, #F8F6F2 100%);
   background-size: 200% 200%;
   animation: gradientShift 20s ease infinite;
 }
 
 .bg-cloud-gradient {
-  background: linear-gradient(180deg, #F8FAFF 0%, #F0F5FB 50%, #E8F0FE 100%);
+  background: linear-gradient(180deg, #FDFAF5 0%, #F8F6F2 50%, #F0EDE6 100%);
 }
 
 /* Mood selector buttons */

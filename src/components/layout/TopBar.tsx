@@ -14,9 +14,9 @@ export default function TopBar({ title }: TopBarProps) {
     <header
       className="h-14 flex items-center px-4 sticky top-0 z-40 border-b"
       style={{
-        background: "rgba(240,245,251,0.92)",
+        background: "rgba(248,246,242,0.92)",
         backdropFilter: "blur(16px)",
-        borderColor: "rgba(74,144,226,0.12)",
+        borderColor: "rgba(120,100,70,0.1)",
       }}
     >
       {/* Left: Title or Menu toggle */}
@@ -24,7 +24,7 @@ export default function TopBar({ title }: TopBarProps) {
         {sidebarCollapsed && (
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-[#E8F0FE] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-[rgba(120,100,70,0.06)] transition-colors"
             style={{ color: "var(--color-text-dim)" }}
           >
             <Menu className="w-4 h-4" />
@@ -54,7 +54,7 @@ export default function TopBar({ title }: TopBarProps) {
             )}
             style={{
               background: "rgba(255,255,255,0.8)",
-              border: "1px solid rgba(74,144,226,0.15)",
+              border: "1px solid rgba(120,100,70,0.12)",
               color: "var(--color-text)",
             }}
           />
@@ -64,7 +64,7 @@ export default function TopBar({ title }: TopBarProps) {
       {/* Right: Notifications + User */}
       <div className="flex items-center gap-2">
         <button
-          className="relative p-2 rounded-lg hover:bg-[#E8F0FE] transition-colors"
+          className="relative p-2 rounded-lg hover:bg-[rgba(120,100,70,0.06)] transition-colors"
           style={{ color: "var(--color-text-dim)" }}
         >
           <Bell className="w-4 h-4" />

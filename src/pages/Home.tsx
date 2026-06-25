@@ -25,6 +25,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTaskStore } from "@/store/taskStore";
 import { useAppStore } from "@/store";
 import { GraduationCap, FileText, School, Send, X, Bot, User } from "lucide-react";
+import AppLayout from "@/components/layout/AppLayout";
 
 const modules = [
   {
@@ -81,7 +82,7 @@ const modules = [
     id: "music",
     title: "音乐创作",
     subtitle: "旋律 · 歌词 · 编曲",
-    description: "用AI谱出你此刻的创意旋律",
+    description: "用AI谱出你此刻的心情旋律",
     tags: ["心情选曲", "AI谱曲", "歌词生成"],
     icon: Music,
     color: "#FFD166",
@@ -114,7 +115,7 @@ function SkyParticles() {
     if (!ctx) return;
     let animId: number;
     const particles: any[] = [];
-    const colors = ["74,144,226", "82,183,136", "167,139,250", "244,163,187", "255,209,102"];
+    const colors = ["74,144,226", "82,183,136", "167,139,250", "244,184,163", "240,168,76"];
     function resize() {
       canvas!.width = canvas!.offsetWidth * window.devicePixelRatio;
       canvas!.height = canvas!.offsetHeight * window.devicePixelRatio;
@@ -143,12 +144,12 @@ function SkyParticles() {
 /* ===== 老师仪表盘 ===== */
 function TeacherDashboard({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+    <AppLayout title="老师工作台">
       <div className="max-w-6xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-3 inline-block" style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA" }}>老师工作台</span>
-          <h1 className="text-2xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>欢迎回来，老师</h1>
+          <span className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-3 inline-block" style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA" }}>仪表盘</span>
+          <h1 className="text-2xl font-semibold mb-1" style={{ color: "var(--color-text)" }}>欢迎回来，老师 👋</h1>
           <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>管理您的课程、学生与作业</p>
         </div>
 
@@ -212,7 +213,7 @@ function TeacherDashboard({ navigate }: { navigate: ReturnType<typeof useNavigat
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
 
@@ -268,7 +269,7 @@ export default function Home() {
       setTimeout(() => {
         const demoReplies = [
           "我理解你的感受，有时候停下来深呼吸一下会好很多。你想试试用文字来表达当下的心情吗？",
-          "你的心情很有价值，每一种感受都值得被看见。要不要试试用创作来转化这份心情？",
+          "你的情绪很有价值，每一种感受都值得被看见。要不要试试用创作来转化这份心情？",
           "我感受到了你的能量！这种状态很适合创作，要不要尝试一个创作挑战？",
           "谢谢你愿意和我分享。有时候把想法写下来，就是治愈的开始。你想聊聊创作的方向吗？",
         ];
@@ -282,12 +283,12 @@ export default function Home() {
     <div className="min-h-full" style={{ background: "var(--color-bg)" }}>
       {/* Top Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-6 border-b"
-        style={{ background: "rgba(240,245,251,0.92)", backdropFilter: "blur(16px)", borderColor: "rgba(74,144,226,0.12)" }}>
+        style={{ background: "rgba(248,246,242,0.92)", backdropFilter: "blur(16px)", borderColor: "rgba(120,100,70,0.1)" }}>
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)" }}>
             <Heart className="w-4 h-4 text-white" />
           </div>
-          <span className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>skyvido</span>
+          <span className="text-sm font-semibold" style={{ color: "var(--color-text)" }}>SkyVido</span>
         </div>
         <div className="hidden md:flex items-center gap-1">
           {[{ label: "首页", path: "/" }, { label: "创作", path: "/module/copywriting" },
@@ -310,19 +311,19 @@ export default function Home() {
 
       {/* HERO */}
       <section className="relative min-h-[55vh] flex flex-col items-center justify-center overflow-hidden pt-14">
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #E8F0FE 0%, #DBEAFE 30%, #F0F7FF 60%, #EFF6FF 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, #DBEAFE 0%, #E4EEFA 35%, #F2EDE5 65%, #F8F6F2 100%)" }} />
         <SkyParticles />
 
         <motion.div className="relative z-10 text-center px-4 max-w-2xl mx-auto" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className="w-2 h-2 rounded-full bg-[#4A90E2] animate-breathe" />
-            <span className="text-sm" style={{ color: "#4A90E2" }}>skyvido · AI 创作学习平台</span>
+            <span className="text-sm" style={{ color: "#4A90E2" }}>SkyVido · AI 创作学习平台</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "var(--color-text)" }}>
             今日，你的心情是什么颜色？
           </h1>
           <p className="text-sm mb-6" style={{ color: "var(--color-text-secondary)" }}>
-            选择心情，开启你的创作学习任务
+            选择心情，开启你的创作疗愈任务
           </p>
 
           {/* Mood Selector */}
@@ -352,7 +353,7 @@ export default function Home() {
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)" }}>
                 <Brain className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="flex-1 text-sm text-slate-400">和SkyVido 助手聊聊...</span>
+              <span className="flex-1 text-sm text-slate-400">和心流伴侣聊聊...</span>
               <div className="p-1.5 rounded-lg" style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)", color: "#fff" }}>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
@@ -401,7 +402,7 @@ export default function Home() {
                         <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: "rgba(74,144,226,0.1)" }}>
                           <Bot className="w-6 h-6" style={{ color: "#4A90E2" }} />
                         </div>
-                        <p className="text-sm" style={{ color: "var(--color-text)" }}>你好，我是你的SkyVido 助手</p>
+                        <p className="text-sm" style={{ color: "var(--color-text)" }}>你好，我是你的心流伴侣</p>
                         <p className="text-xs mt-1" style={{ color: "var(--color-text-secondary)" }}>告诉我你现在的心情，我陪你聊聊</p>
                       </div>
                     )}
@@ -546,7 +547,7 @@ export default function Home() {
       <section className="px-6 py-12 max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <span className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-2 inline-block" style={{ background: "rgba(74,144,226,0.08)", color: "#4A90E2" }}>六大创作工具</span>
-          <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>AI创作，释放灵感</h2>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>AI创作，疗愈心灵</h2>
         </div>
 
         <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"

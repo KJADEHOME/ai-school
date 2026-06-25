@@ -63,29 +63,29 @@ export default function Sidebar() {
 
   return (
     <aside className={cn("fixed left-0 top-0 h-full flex flex-col transition-all duration-300 z-50", sidebarCollapsed ? "w-[60px]" : "w-[230px]")}
-      style={{ background: "rgba(248,250,255,0.96)", borderRight: "1px solid rgba(74,144,226,0.12)" }}>
+      style={{ background: "rgba(250,247,241,0.97)", borderRight: "1px solid rgba(120,100,70,0.1)" }}>
       {/* Logo */}
       <div className={cn("h-14 flex items-center border-b px-4", sidebarCollapsed && "justify-center px-2")}
-        style={{ borderColor: "rgba(74,144,226,0.1)" }}>
+        style={{ borderColor: "rgba(120,100,70,0.08)" }}>
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)" }}>
             <Heart className="w-4 h-4 text-white" />
           </div>
           {!sidebarCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight" style={{ color: "var(--color-text)" }}>skyvido</span>
-              <span className="text-[10px] leading-tight" style={{ color: "var(--color-text-dim)" }}>AI 创作创作疗愈</span>
+              <span className="text-sm font-semibold leading-tight" style={{ color: "var(--color-text)" }}>SkyVido</span>
+              <span className="text-[10px] leading-tight" style={{ color: "var(--color-text-dim)" }}>AI 创作学习平台</span>
             </div>
           )}
         </div>
         {!sidebarCollapsed && (
-          <button onClick={toggleSidebar} className="ml-auto p-1 rounded-lg hover:bg-[#E8F0FE] transition-colors" style={{ color: "var(--color-text-dim)" }}>
+          <button onClick={toggleSidebar} className="ml-auto p-1 rounded-lg hover:bg-[rgba(120,100,70,0.08)] transition-colors" style={{ color: "var(--color-text-dim)" }}>
             <ChevronLeft className="w-4 h-4" />
           </button>
         )}
         {sidebarCollapsed && (
           <button onClick={toggleSidebar} className="absolute -right-3 top-14 w-6 h-6 rounded-full flex items-center justify-center"
-            style={{ background: "#E8F0FE", border: "1px solid rgba(74,144,226,0.2)", color: "#64748B" }}>
+            style={{ background: "#F0EBE3", border: "1px solid rgba(120,100,70,0.15)", color: "#8B8070" }}>
             <ChevronRight className="w-3 h-3" />
           </button>
         )}
@@ -143,7 +143,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Bottom Section: Role Switch + User */}
-      <div className="p-3 space-y-2" style={{ borderTop: "1px solid rgba(74,144,226,0.08)" }}>
+      <div className="p-3 space-y-2" style={{ borderTop: "1px solid rgba(120,100,70,0.07)" }}>
         {/* Role Indicator */}
         {!sidebarCollapsed && (
           <div
@@ -180,7 +180,7 @@ export default function Sidebar() {
         )}
 
         {/* User Profile */}
-        <div className={cn("flex items-center gap-2 rounded-xl transition-colors cursor-pointer hover:bg-[#E8F0FE]", sidebarCollapsed ? "p-2 justify-center" : "p-2")}>
+        <div className={cn("flex items-center gap-2 rounded-xl transition-colors cursor-pointer hover:bg-[rgba(120,100,70,0.06)]", sidebarCollapsed ? "p-2 justify-center" : "p-2")}>
           {user?.avatar ? (
             <img src={user.avatar} alt={user.name || ""} className="w-8 h-8 rounded-full flex-shrink-0" />
           ) : (
@@ -197,7 +197,7 @@ export default function Sidebar() {
         </div>
         {!sidebarCollapsed && (
           <div className="flex items-center gap-1 mt-1">
-            <button className="flex-1 flex items-center justify-center gap-1 p-1.5 rounded-lg hover:bg-[#E8F0FE] text-xs transition-colors" style={{ color: "var(--color-text-dim)" }}>
+            <button className="flex-1 flex items-center justify-center gap-1 p-1.5 rounded-lg hover:bg-[rgba(120,100,70,0.06)] text-xs transition-colors" style={{ color: "var(--color-text-dim)" }}>
               <Settings className="w-3 h-3" /><span>设置</span>
             </button>
             <button onClick={logout} className="flex-1 flex items-center justify-center gap-1 p-1.5 rounded-lg hover:bg-red-50 text-xs transition-colors" style={{ color: "var(--color-text-dim)" }}>
