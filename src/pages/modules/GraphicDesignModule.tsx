@@ -1,5 +1,4 @@
-import React, { useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState, useCallback } from "react";
 import {
   Palette,
   Upload,
@@ -20,42 +19,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/components/layout/AppLayout";
-
-// ── Error Boundary ────────────────────────────────────────────────
-class ModuleErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; errorMsg: string }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, errorMsg: "" };
-  }
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, errorMsg: error.message };
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <AppLayout title="平面设计">
-          <div className="flex items-center justify-center h-[80vh]">
-            <div className="text-center p-8">
-              <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-              <p className="text-lg font-medium text-gray-800 mb-2">页面加载异常</p>
-              <p className="text-sm text-gray-500 mb-4">{this.state.errorMsg}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-violet-500 text-white rounded-lg text-sm hover:bg-violet-600"
-              >
-                刷新页面
-              </button>
-            </div>
-          </div>
-        </AppLayout>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 // ── Data ─────────────────────────────────────────────────────────
 const templateCategories = [
@@ -84,14 +47,14 @@ const stylePresets = [
   { id: "bold", label: "大胆", desc: "视觉冲击" },
 ];
 
-const sizeMap: Record<string, { width: number; height: number }> = {
-  "1:1": { width: 1024, height: 1024 },
-  "4:3": { width: 1280, height: 960 },
-  "9:16": { width: 768, height: 1080 },
+const sizeMap: Record<string, string> = {
+  "1:1": "1024*1024",
+  "4:3": "1280*960",
+  "9:16": "768*1080",
 };
 
 // ── Component ─────────────────────────────────────────────────────
-function GraphicDesignInner() {
+export default function GraphicDesignModule() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -102,6 +65,7 @@ function GraphicDesignInner() {
   const [intensity, setIntensity] = useState(50);
   const [selectedSize, setSelectedSize] = useState("1:1");
   const [errorMsg, setErrorMsg] = useState("");
+  const [hasError, setHasError] = useState(false);
 
   const filteredTemplates =
     activeCategory === "all"
@@ -114,38 +78,38 @@ function GraphicDesignInner() {
       const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
       if (!apiKey) return null;
 
-      const res = await fetch("https://api.deepseek.com/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "deepseek-chat",
-          messages: [
-            {
-              role: "system",
-              content:
-                "你是一位资深的平面设计师和视觉创意专家。请根据用户的要求，生成专业的设计方案建议。用中文回复，格式清晰，包含设计理念、配色方案、排版布局、视觉元素等板块。控制在300字以内。",
-            },
-            { role: "user", content: userMessage },
-          ],
-          stream: true,
-          temperature: 0.8,
-          max_tokens: 1024,
-        }),
-      });
-
-      if (!res.ok) return null;
-
-      const reader = res.body?.getReader();
-      if (!reader) return null;
-
-      const decoder = new TextDecoder();
-      let fullContent = "";
-      setGeneratedContent("");
-
       try {
+        const res = await fetch("https://api.deepseek.com/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "deepseek-chat",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "你是一位资深的平面设计师和视觉创意专家。请根据用户的要求，生成专业的设计方案建议。用中文回复，格式清晰，包含设计理念、配色方案、排版布局、视觉元素等板块。控制在300字以内。",
+              },
+              { role: "user", content: userMessage },
+            ],
+            stream: true,
+            temperature: 0.8,
+            max_tokens: 1024,
+          }),
+        });
+
+        if (!res.ok) return null;
+
+        const reader = res.body?.getReader();
+        if (!reader) return null;
+
+        const decoder = new TextDecoder();
+        let fullContent = "";
+        setGeneratedContent("");
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -162,15 +126,15 @@ function GraphicDesignInner() {
                 setGeneratedContent(fullContent);
               }
             } catch {
-              /* ignore parse errors */
+              /* ignore */
             }
           }
         }
-      } catch (e) {
-        // stream read error — partial content is OK
-      }
 
-      return fullContent || null;
+        return fullContent || null;
+      } catch {
+        return null;
+      }
     },
     []
   );
@@ -181,7 +145,7 @@ function GraphicDesignInner() {
       const apiKey = import.meta.env.VITE_VOLCENGINE_API_KEY;
       if (!apiKey) return null;
 
-      const size = sizeMap[selectedSize] || sizeMap["1:1"];
+      const sizeStr = sizeMap[selectedSize] || sizeMap["1:1"];
 
       try {
         const res = await fetch(
@@ -196,30 +160,16 @@ function GraphicDesignInner() {
               model: "doubao-seedream-5-0-260128",
               prompt: imagePrompt,
               n: 1,
-              size: `${size.width}*${size.height}`,
+              size: sizeStr,
             }),
           }
         );
 
-        if (!res.ok) {
-          const errText = await res.text().catch(() => "");
-          console.error("Seedream API error:", res.status, errText);
-          return null;
-        }
+        if (!res.ok) return null;
 
         const data = await res.json();
-        const imageUrl = data?.data?.[0]?.url || data?.data?.[0]?.b64_json || null;
-
-        if (imageUrl && imageUrl.startsWith("data:image")) {
-          return imageUrl; // base64 data URI
-        } else if (imageUrl) {
-          return imageUrl; // URL string
-        }
-
-        console.log("Seedream response:", JSON.stringify(data).slice(0, 500));
-        return null;
-      } catch (err: any) {
-        console.error("Seedream network error:", err);
+        return data?.data?.[0]?.url || data?.data?.[0]?.b64_json || null;
+      } catch {
         return null;
       }
     },
@@ -233,6 +183,7 @@ function GraphicDesignInner() {
     setGeneratedContent(null);
     setGeneratedImageUrl(null);
     setErrorMsg("");
+    setHasError(false);
 
     const selectedTpl = selectedTemplate
       ? templates.find((t) => t.id === selectedTemplate)
@@ -240,56 +191,90 @@ function GraphicDesignInner() {
     const styleName =
       stylePresets.find((s) => s.id === selectedStyle)?.label || selectedStyle;
 
-    // 构建提示词
-    const designPrompt = `请为以下项目生成一个设计方案：\n- 模板类型：${selectedTpl?.name || "通用"}\n- 风格：${styleName}\n- 创意强度：${intensity}%\n- 详细描述：${prompt}`;
+    const designPrompt =
+      "请为以下项目生成一个设计方案：\n- 模板类型：" +
+      (selectedTpl?.name || "通用") +
+      "\n- 风格：" +
+      styleName +
+      "\n- 创意强度：" +
+      intensity +
+      "%\n- 详细描述：" +
+      prompt;
 
-    // 图片生成的 prompt（英文效果更好）
-    const imagePrompt = `Professional graphic design, ${styleName} style, ${prompt}, high quality, clean composition, modern design aesthetic`;
+    const imagePrompt =
+      "Professional graphic design, " +
+      styleName +
+      " style, " +
+      prompt +
+      ", high quality, clean composition, modern design aesthetic";
 
-    // 并行调用：DeepSeek 文字 + 即梦 图片
-    const [, imageUrl] = await Promise.all([
-      callDeepSeek(designPrompt),
-      callSeedream(imagePrompt),
-    ]);
+    try {
+      const [, imageUrl] = await Promise.all([
+        callDeepSeek(designPrompt),
+        callSeedream(imagePrompt),
+      ]);
 
-    if (imageUrl) {
-      setGeneratedImageUrl(imageUrl);
-    }
-
-    setIsGenerating(false);
-
-    if (!generatedContent && !imageUrl) {
-      setErrorMsg("生成失败，请检查网络连接后重试");
+      if (imageUrl) setGeneratedImageUrl(imageUrl);
+    } catch (e) {
+      setErrorMsg("生成过程中出现错误");
+      setHasError(true);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
+  // ── Error Fallback ────────────────────────────────────────────
+  if (hasError && !isGenerating) {
+    return (
+      <AppLayout title="平面设计">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "80vh" }}>
+          <div style={{ textAlign: "center", padding: "32px" }}>
+            <AlertCircle style={{ width: 48, height: 48, color: "#f87171", margin: "0 auto 16px" }} />
+            <p style={{ fontSize: 18, fontWeight: 500, color: "#1f2937", marginBottom: 8 }}>页面加载异常</p>
+            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>{errorMsg}</p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{ padding: "8px 16px", backgroundColor: "#8b5cf6", color: "#fff", borderRadius: 8, fontSize: 14, border: "none", cursor: "pointer" }}
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // ── Main Render ───────────────────────────────────────────────
   return (
     <AppLayout title="平面设计" fullWidth>
-      <div className="h-[calc(100vh-0px)] flex bg-[#0a0a0a]">
-        {/* Left Panel - Templates */}
-        <div className="w-[280px] bg-[#0d0d0d] border-r border-[#1a1a1a] flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="p-4 border-b border-[#1a1a1a] flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Palette className="w-5 h-5 text-[#a29bfe]" />
-              <h2 className="text-sm font-medium text-white">模板库</h2>
+      <div style={{ height: "calc(100vh - 0px)", display: "flex", background: "#0a0a0a" }}>
+        {/* Left Panel */}
+        <div style={{ width: 280, background: "#0d0d0d", borderRight: "1px solid #1a1a1a", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ padding: 16, borderBottom: "1px solid #1a1a1a", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <Palette style={{ width: 20, height: 20, color: "#a29bfe" }} />
+              <h2 style={{ fontSize: 14, fontWeight: 500, color: "#fff", margin: 0 }}>模板库</h2>
             </div>
-            <p className="text-xs text-[#666]">选择模板开始创作</p>
+            <p style={{ fontSize: 12, color: "#666", margin: 0 }}>选择模板开始创作</p>
           </div>
 
-          {/* Categories */}
-          <div className="p-3 border-b border-[#1a1a1a] flex-shrink-0">
-            <div className="flex flex-wrap gap-1.5">
+          <div style={{ padding: 12, borderBottom: "1px solid #1a1a1a", flexShrink: 0 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {templateCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs transition-all",
-                    activeCategory === cat.id
-                      ? "bg-[#a29bfe]/20 text-[#a29bfe] border border-[#a29bfe]/30"
-                      : "bg-[#141414] text-[#a0a0a0] border border-[#2a2a2a] hover:border-[#333]"
-                  )}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    border: "1px solid",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    background: activeCategory === cat.id ? "rgba(162,155,254,0.2)" : "#141414",
+                    color: activeCategory === cat.id ? "#a29bfe" : "#a0a0a0",
+                    borderColor: activeCategory === cat.id ? "rgba(162,155,254,0.3)" : "#2a2a2a",
+                  }}
                 >
                   {cat.label}
                 </button>
@@ -297,177 +282,172 @@ function GraphicDesignInner() {
             </div>
           </div>
 
-          {/* Template List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
             {filteredTemplates.map((tpl) => (
               <button
                 key={tpl.id}
                 onClick={() => setSelectedTemplate(tpl.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all group",
-                  selectedTemplate === tpl.id
-                    ? "bg-[#a29bfe]/10 border border-[#a29bfe]/30"
-                    : "bg-[#141414] border border-[#2a2a2a] hover:border-[#333]"
-                )}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: 12,
+                  borderRadius: 8,
+                  textAlign: "left",
+                  cursor: "pointer",
+                  border: "1px solid",
+                  background: selectedTemplate === tpl.id ? "rgba(162,155,254,0.1)" : "#141414",
+                  borderColor: selectedTemplate === tpl.id ? "rgba(162,155,254,0.3)" : "#2a2a2a",
+                  transition: "all 0.15s",
+                }}
               >
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${tpl.color}20` }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    background: tpl.color + "20",
+                  }}
                 >
-                  <tpl.icon className="w-5 h-5" style={{ color: tpl.color }} />
+                  <tpl.icon style={{ width: 20, height: 20, color: tpl.color }} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{tpl.name}</p>
-                  <p className="text-[10px] text-[#666]">{tpl.category}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tpl.name}</p>
+                  <p style={{ fontSize: 10, color: "#666", margin: 0 }}>{tpl.category}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#666] group-hover:text-white transition-colors flex-shrink-0" />
+                <ChevronRight style={{ width: 16, height: 16, color: "#666", flexShrink: 0 }} />
               </button>
             ))}
           </div>
         </div>
 
         {/* Center - Canvas */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
           {/* Toolbar */}
-          <div className="h-12 flex items-center justify-between px-4 border-b border-[#1a1a1a] flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#a0a0a0] hover:text-white transition-all">
-                <Upload className="w-3.5 h-3.5" />
-                上传图片
+          <div style={{ height: 48, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", borderBottom: "1px solid #1a1a1a", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#141414", border: "1px solid #2a2a2a", borderRadius: 8, fontSize: 12, color: "#a0a0a0", cursor: "pointer" }}>
+                <Upload style={{ width: 14, height: 14 }} /> 上传图片
               </button>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#a0a0a0] hover:text-white transition-all">
-                <Layers className="w-3.5 h-3.5" />
-                图层
+              <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#141414", border: "1px solid #2a2a2a", borderRadius: 8, fontSize: 12, color: "#a0a0a0", cursor: "pointer" }}>
+                <Layers style={{ width: 14, height: 14 }} /> 图层
               </button>
             </div>
-            <div className="flex items-center gap-2">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button
                 onClick={handleGenerate}
                 disabled={!prompt.trim() || isGenerating}
-                className={cn(
-                  "flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium transition-all",
-                  prompt.trim() && !isGenerating
-                    ? "bg-[#a29bfe] text-white hover:bg-[#7c3aed]"
-                    : "bg-[#2a2a2a] text-[#666] cursor-not-allowed"
-                )}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 16px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: (!prompt.trim() || isGenerating) ? "not-allowed" : "pointer",
+                  background: prompt.trim() && !isGenerating ? "#a29bfe" : "#2a2a2a",
+                  color: prompt.trim() && !isGenerating ? "#fff" : "#666",
+                  border: "none",
+                  opacity: (!prompt.trim() || isGenerating) ? 0.7 : 1,
+                }}
               >
                 {isGenerating ? (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                    生成中...
-                  </>
+                  <><Sparkles style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} /> 生成中...</>
                 ) : (
-                  <>
-                    <Wand2 className="w-3.5 h-3.5" />
-                    生成
-                  </>
+                  <><Wand2 style={{ width: 14, height: 14 }} /> 生成</>
                 )}
               </button>
               {(generatedImageUrl || generatedContent) && (
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#a0a0a0] hover:text-white transition-all">
-                  <Download className="w-3.5 h-3.5" />
-                  下载
+                <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#141414", border: "1px solid #2a2a2a", borderRadius: 8, fontSize: 12, color: "#a0a0a0", cursor: "pointer" }}>
+                  <Download style={{ width: 14, height: 14 }} /> 下载
                 </button>
               )}
             </div>
           </div>
 
           {/* Canvas Area */}
-          <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a] overflow-auto">
-            <div className="relative w-full max-w-[700px]">
-              {/* 有内容时展示结果 */}
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#0a0a0a", overflow: "auto" }}>
+            <div style={{ width: "100%", maxWidth: 700 }}>
+              {/* 有结果时展示 */}
               {(generatedImageUrl || generatedContent) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  {/* 生成的图片 */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {/* 图片 */}
                   {generatedImageUrl && (
-                    <div className="rounded-xl overflow-hidden border border-[#a29bfe]/20">
+                    <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(162,155,254,0.2)" }}>
                       <img
                         src={generatedImageUrl}
                         alt="AI 生成的设计图"
-                        className="w-full h-auto block"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                          setErrorMsg("图片加载失败，请重试");
-                        }}
+                        style={{ width: "100%", height: "auto", display: "block" }}
+                        onError={() => setErrorMsg("图片加载失败")}
                       />
-                      <div className="bg-[#141414] px-4 py-2 flex items-center justify-between">
-                        <span className="text-xs text-[#a0a0a0]">即梦 AI 生成</span>
-                        <span className="text-[10px] text-[#555]">{selectedSize}</span>
+                      <div style={{ background: "#141414", padding: "8px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 12, color: "#a0a0a0" }}>即梦 AI 生成</span>
+                        <span style={{ fontSize: 10, color: "#555" }}>{selectedSize}</span>
                       </div>
                     </div>
                   )}
 
-                  {/* 设计方案文字 */}
+                  {/* 文字方案 */}
                   {generatedContent && (
-                    <div className="bg-gradient-to-br from-violet-500/5 to-purple-500/5 rounded-xl border border-[#a29bfe]/20 p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Bot className="w-4 h-4 text-[#a29bfe]" />
-                        <span className="text-xs font-medium text-white">
-                          AI 设计方案
-                        </span>
-                        {isGenerating && (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#a29bfe]" />
-                        )}
+                    <div style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.05), rgba(168,85,247,0.05))", borderRadius: 12, border: "1px solid rgba(162,155,254,0.2)", padding: 20 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                        <Bot style={{ width: 16, height: 16, color: "#a29bfe" }} />
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "#fff" }}>AI 设计方案</span>
+                        {isGenerating && <Loader2 style={{ width: 14, height: 14, color: "#a29bfe", animation: "spin 1s linear infinite" }} />}
                       </div>
-                      <div className="text-xs text-[#d0d0d0] leading-relaxed whitespace-pre-wrap">
+                      <div style={{ fontSize: 12, color: "#d0d0d0", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                         {generatedContent}
                       </div>
                     </div>
                   )}
 
-                  {/* 正在生成中且还没有结果时的 loading */}
+                  {/* Loading（有结果区域但还在生成中） */}
                   {isGenerating && !generatedImageUrl && !generatedContent && (
-                    <div className="text-center py-16">
-                      <div className="relative w-14 h-14 mx-auto mb-4">
-                        <div className="absolute inset-0 rounded-full border-2 border-[#a29bfe]/20" />
-                        <div className="absolute inset-0 rounded-full border-2-transparent border-t-[#a29bfe] animate-spin" />
-                        <Sparkles className="absolute inset-0 m-auto w-5 h-5 text-[#a29bfe]" />
+                    <div style={{ textAlign: "center", padding: "64px 0" }}>
+                      <div style={{ position: "relative", width: 56, height: 56, margin: "0 auto 16px" }}>
+                        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid rgba(162,155,254,0.2)" }} />
+                        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid transparent", borderTopColor: "#a29bfe", animation: "spin 1s linear infinite" }} />
+                        <Sparkles style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 20, height: 20, color: "#a29bfe" }} />
                       </div>
-                      <p className="text-white text-sm font-medium">AI 创作中...</p>
-                      <p className="text-xs text-[#a0a0a0] mt-1">
-                        正在通过即梦 + DeepSeek 生成设计
-                      </p>
+                      <p style={{ color: "#fff", fontSize: 14, fontWeight: 500 }}>AI 创作中...</p>
+                      <p style={{ fontSize: 12, color: "#a0a0a0", marginTop: 4 }}>正在通过即梦 + DeepSeek 生成设计</p>
                     </div>
                   )}
 
                   {/* 错误信息 */}
                   {errorMsg && (
-                    <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-red-400">{errorMsg}</p>
-                      </div>
+                    <div style={{ marginTop: 12, padding: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, display: "flex", alignItems: "start", gap: 8 }}>
+                      <AlertCircle style={{ width: 16, height: 16, color: "#f87171", flexShrink: 0, marginTop: 1 }} />
+                      <p style={{ fontSize: 12, color: "#f87171", margin: 0 }}>{errorMsg}</p>
                     </div>
                   )}
-                </motion.div>
+                </div>
               )}
 
-              {/* 空状态（没有任何结果时） */}
+              {/* 空状态 */}
               {!generatedImageUrl && !generatedContent && (
-                <div className="w-full min-h-[380px] bg-[#141414] rounded-xl border border-dashed border-[#2a2a2a] flex flex-col items-center justify-center">
+                <div style={{ width: "100%", minHeight: 380, background: "#141414", borderRadius: 12, border: "1px dashed #2a2a2a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                   {isGenerating ? (
-                    <div className="text-center py-8">
-                      <div className="relative w-14 h-14 mx-auto mb-4">
-                        <div className="absolute inset-0 rounded-full border-2 border-[#a29bfe]/20" />
-                        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#a29bfe] animate-spin" />
-                        <Sparkles className="absolute inset-0 m-auto w-5 h-5 text-[#a29bfe]" />
+                    <div style={{ textAlign: "center", padding: "32px 0" }}>
+                      <div style={{ position: "relative", width: 56, height: 56, margin: "0 auto 16px" }}>
+                        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid rgba(162,155,254,0.2)" }} />
+                        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "2px solid transparent", borderTopColor: "#a29bfe", animation: "spin 1s linear infinite" }} />
+                        <Sparkles style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 20, height: 20, color: "#a29bfe" }} />
                       </div>
-                      <p className="text-white text-sm font-medium">AI 创作中...</p>
-                      <p className="text-xs text-[#a0a0a0] mt-1">
-                        正在通过即梦 + DeepSeek 生成设计
-                      </p>
+                      <p style={{ color: "#fff", fontSize: 14, fontWeight: 500 }}>AI 创作中...</p>
+                      <p style={{ fontSize: 12, color: "#a0a0a0", marginTop: 4 }}>正在通过即梦 + DeepSeek 生成设计</p>
                     </div>
                   ) : (
                     <>
-                      <Image className="w-11 h-11 text-[#333] mb-3" />
-                      <p className="text-sm text-[#666]">
-                        {selectedTemplate
-                          ? "输入提示词开始生成"
-                          : "选择模板或上传图片开始创作"}
+                      <Image style={{ width: 44, height: 44, color: "#333", marginBottom: 12 }} />
+                      <p style={{ fontSize: 14, color: "#666" }}>
+                        {selectedTemplate ? "输入提示词开始生成" : "选择模板或上传图片开始创作"}
                       </p>
                     </>
                   )}
@@ -477,59 +457,71 @@ function GraphicDesignInner() {
           </div>
         </div>
 
-        {/* Right Panel - Parameters */}
-        <div className="w-[280px] bg-[#0d0d0d] border-l border-[#1a1a1a] flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-[#1a1a1a] flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-[#a29bfe]" />
-              <h3 className="text-sm font-medium text-white">参数调整</h3>
+        {/* Right Panel */}
+        <div style={{ width: 280, background: "#0d0d0d", borderLeft: "1px solid #1a1a1a", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ padding: 16, borderBottom: "1px solid #1a1a1a", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <SlidersHorizontal style={{ width: 16, height: 16, color: "#a29bfe" }} />
+              <h3 style={{ fontSize: 14, fontWeight: 500, color: "#fff", margin: 0 }}>参数调整</h3>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-5">
-            {/* Prompt Input */}
+          <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Prompt */}
             <div>
-              <label className="text-xs text-[#a0a0a0] mb-2 block">
-                创作描述
-              </label>
+              <label style={{ fontSize: 12, color: "#a0a0a0", display: "block", marginBottom: 8 }}>创作描述</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="描述你想要的设计..."
                 rows={4}
-                className="w-full px-3 py-2 bg-[#141414] border border-[#2a2a2a] rounded-lg text-sm text-white placeholder:text-[#666] outline-none focus:border-[#a29bfe] focus:ring-1 focus:ring-[#a29bfe]/30 resize-none transition-all"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "#141414",
+                  border: "1px solid #2a2a2a",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  color: "#fff",
+                  outline: "none",
+                  resize: "none",
+                  fontFamily: "inherit",
+                  boxSizing: "border-box",
+                }}
               />
             </div>
 
-            {/* Style Selection */}
+            {/* Style */}
             <div>
-              <label className="text-xs text-[#a0a0a0] mb-2 block">
-                风格选择
-              </label>
-              <div className="grid grid-cols-2 gap-2">
+              <label style={{ fontSize: 12, color: "#a0a0a0", display: "block", marginBottom: 8 }}>风格选择</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {stylePresets.map((style) => (
                   <button
                     key={style.id}
                     onClick={() => setSelectedStyle(style.id)}
-                    className={cn(
-                      "p-2.5 rounded-lg text-left transition-all",
-                      selectedStyle === style.id
-                        ? "bg-[#a29bfe]/10 border border-[#a29bfe]/30"
-                        : "bg-[#141414] border border-[#2a2a2a] hover:border-[#333]"
-                    )}
+                    style={{
+                      padding: 10,
+                      borderRadius: 8,
+                      textAlign: "left",
+                      cursor: "pointer",
+                      border: "1px solid",
+                      background: selectedStyle === style.id ? "rgba(162,155,254,0.1)" : "#141414",
+                      borderColor: selectedStyle === style.id ? "rgba(162,155,254,0.3)" : "#2a2a2a",
+                      transition: "all 0.15s",
+                    }}
                   >
-                    <p className="text-xs text-white">{style.label}</p>
-                    <p className="text-[10px] text-[#666]">{style.desc}</p>
+                    <p style={{ fontSize: 12, color: "#fff", margin: 0 }}>{style.label}</p>
+                    <p style={{ fontSize: 10, color: "#666", margin: 0 }}>{style.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Intensity Slider */}
+            {/* Intensity */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-[#a0a0a0]">创意强度</label>
-                <span className="text-xs text-[#a29bfe]">{intensity}%</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <label style={{ fontSize: 12, color: "#a0a0a0" }}>创意强度</label>
+                <span style={{ fontSize: 12, color: "#a29bfe" }}>{intensity}%</span>
               </div>
               <input
                 type="range"
@@ -537,20 +529,18 @@ function GraphicDesignInner() {
                 max={100}
                 value={intensity}
                 onChange={(e) => setIntensity(Number(e.target.value))}
-                className="w-full h-1.5 bg-[#2a2a2a] rounded-full appearance-none cursor-pointer accent-[#a29bfe]"
+                style={{ width: "100%", accentColor: "#a29bfe" }}
               />
-              <div className="flex justify-between mt-1">
-                <span className="text-[10px] text-[#666]">保守</span>
-                <span className="text-[10px] text-[#666]">激进</span>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                <span style={{ fontSize: 10, color: "#666" }}>保守</span>
+                <span style={{ fontSize: 10, color: "#666" }}>激进</span>
               </div>
             </div>
 
-            {/* Size Selection */}
+            {/* Size */}
             <div>
-              <label className="text-xs text-[#a0a0a0] mb-2 block">
-                输出尺寸
-              </label>
-              <div className="grid grid-cols-3 gap-2">
+              <label style={{ fontSize: 12, color: "#a0a0a0", display: "block", marginBottom: 8 }}>输出尺寸</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 {[
                   { label: "1:1", desc: "方形" },
                   { label: "4:3", desc: "横屏" },
@@ -559,39 +549,33 @@ function GraphicDesignInner() {
                   <button
                     key={size.label}
                     onClick={() => setSelectedSize(size.label)}
-                    className={cn(
-                      "p-2 rounded-lg text-center transition-all",
-                      selectedSize === size.label
-                        ? "bg-[#a29bfe]/10 border border-[#a29bfe]/30"
-                        : "bg-[#141414] border border-[#2a2a2a] hover:border-[#333]"
-                    )}
+                    style={{
+                      padding: 8,
+                      borderRadius: 8,
+                      textAlign: "center",
+                      cursor: "pointer",
+                      border: "1px solid",
+                      background: selectedSize === size.label ? "rgba(162,155,254,0.1)" : "#141414",
+                      borderColor: selectedSize === size.label ? "rgba(162,155,254,0.3)" : "#2a2a2a",
+                      transition: "all 0.15s",
+                    }}
                   >
-                    <p className="text-xs text-white">{size.label}</p>
-                    <p className="text-[10px] text-[#666]">{size.desc}</p>
+                    <p style={{ fontSize: 12, color: "#fff", margin: 0 }}>{size.label}</p>
+                    <p style={{ fontSize: 10, color: "#666", margin: 0 }}>{size.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Bottom Actions */}
-          <div className="p-4 border-t border-[#1a1a1a] space-y-2 flex-shrink-0">
-            <button className="w-full flex items-center justify-center gap-2 py-2 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#a0a0a0] hover:text-white transition-colors">
-              <Bookmark className="w-3.5 h-3.5" />
-              保存为模板
+          {/* Bottom */}
+          <div style={{ padding: 16, borderTop: "1px solid #1a1a1a", flexShrink: 0 }}>
+            <button style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 8, background: "#141414", border: "1px solid #2a2a2a", borderRadius: 8, fontSize: 12, color: "#a0a0a0", cursor: "pointer" }}>
+              <Bookmark style={{ width: 14, height: 14 }} /> 保存为模板
             </button>
           </div>
         </div>
       </div>
     </AppLayout>
-  );
-}
-
-// ── Export with Error Boundary ───────────────────────────────────
-export default function GraphicDesignModule() {
-  return (
-    <ModuleErrorBoundary>
-      <GraphicDesignInner />
-    </ModuleErrorBoundary>
   );
 }
