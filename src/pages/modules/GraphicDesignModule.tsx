@@ -11,6 +11,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
+import { trpc } from "@/providers/trpc";
 
 const STYLES = [
   { id: "minimal", label: "极简", desc: "简洁干净" },
@@ -135,79 +136,32 @@ export default function GraphicDesignModule() {
     }
   }
 
-  /* ── 即梦 Seedream 图片生成 ── */
+  /* ── 即梦 Seedream 图片生成（通过 tRPC 后端代理）── */
+  const generateImageMutation = trpc.volcengine.generateImage.useMutation({
+    onSuccess: (data) => {
+      setGeneratedImageUrl(data.imageUrl);
+      setStatusText("✅ 图片生成成功！");
+      setIsImageLoading(false);
+    },
+    onError: (err) => {
+      setErrorMsg(err.message);
+      setStatusText(`❌ 错误: ${err.message}`);
+      setIsImageLoading(false);
+    },
+  });
+
   async function handleGenerateImage() {
-    // 立即反馈
-    alert("✅ 图片生成点击被触发！正在连接即梦 API...");
     if (!prompt.trim()) return;
     setIsImageLoading(true);
     setGeneratedImageUrl("");
     setErrorMsg("");
-    setStatusText("⏳ 正在连接即梦 API...");
+    setStatusText("⏳ 正在通过后端调用即梦 API...");
 
-    try {
-      const apiKey = import.meta.env.VITE_VOLCENGINE_API_KEY || "";
-      if (!apiKey) {
-        throw new Error("即梦 API Key 未配置（VITE_VOLCENGINE_API_KEY）");
-      }
-      setStatusText(`🔑 火山方舟 Key: ${apiKey.slice(0, 12)}...`);
-
-      const size = SIZE_MAP[selectedSize];
-      const styleNames: Record<string, string> = {
-        minimal: "极简风格",
-        retro: "复古风格",
-        scifi: "科幻风格",
-        cute: "可爱风格",
-        elegant: "优雅风格",
-        bold: "大胆风格",
-      };
-      const styleName = styleNames[selectedStyle] || "极简风格";
-
-      setStatusText("🎨 正在提交图片生成请求...");
-      const submitResp = await fetch(
-        "https://ark.cn-beijing.volces.com/api/v3/images/generations",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: "doubao-seedream-5-0-260128",
-            prompt: `${styleName}，${prompt.trim()}。高质量，细节丰富`,
-            n: 1,
-            size: `${size.width}*${size.height}`,
-          }),
-        }
-      );
-
-      if (!submitResp.ok) {
-        const errText = await submitResp.text();
-        throw new Error(`请求失败(${submitResp.status}): ${errText.slice(0, 200)}`);
-      }
-
-      const result = await submitResp.json();
-      setStatusText("📥 收到响应，解析中...");
-      console.log("即梦 API 响应:", result);
-
-      let imageUrl = "";
-      if (result.data && result.data[0]) {
-        imageUrl = result.data[0].url || result.data[0].b64_json || "";
-      }
-
-      if (imageUrl) {
-        setGeneratedImageUrl(imageUrl);
-        setStatusText("✅ 图片生成成功！");
-      } else {
-        setStatusText(`⚠️ 无图片URL。响应: ${JSON.stringify(result).slice(0, 200)}`);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setErrorMsg(msg);
-      setStatusText(`❌ 错误: ${msg}`);
-    } finally {
-      setIsImageLoading(false);
-    }
+    generateImageMutation.mutate({
+      prompt: prompt.trim(),
+      size: selectedSize,
+      style: selectedStyle,
+    });
   }
 
   /* ── 渲染 ── */
