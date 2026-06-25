@@ -54,6 +54,7 @@ export default function GraphicDesignModule() {
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState("minimal");
   const [intensity, setIntensity] = useState(50);
+  const [selectedSize, setSelectedSize] = useState("1:1");
   const [errorMsg, setErrorMsg] = useState("");
 
   const filteredTemplates =
@@ -390,7 +391,13 @@ export default function GraphicDesignModule() {
                 ].map((size) => (
                   <button
                     key={size.label}
-                    className="p-2 bg-[#141414] border border-[#2a2a2a] hover:border-[#333] rounded-lg text-center transition-all"
+                    onClick={() => setSelectedSize(size.label)}
+                    className={cn(
+                      "p-2 rounded-lg text-center transition-all",
+                      selectedSize === size.label
+                        ? "bg-[#a29bfe]/10 border border-[#a29bfe]/30"
+                        : "bg-[#141414] border border-[#2a2a2a] hover:border-[#333]"
+                    )}
                   >
                     <p className="text-xs text-white">{size.label}</p>
                     <p className="text-[10px] text-[#666]">{size.desc}</p>
