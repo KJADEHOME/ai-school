@@ -50,6 +50,8 @@ export default function GraphicDesignModule() {
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  // 调试信息
+  const [debugInfo, setDebugInfo] = useState("");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,9 +67,12 @@ export default function GraphicDesignModule() {
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setIsChatLoading(true);
     setErrorMsg("");
+    setDebugInfo("正在连接 DeepSeek API...");
 
     try {
       const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY || "";
+      setDebugInfo(`API Key 状态: ${apiKey ? "已配置 (前4位: " + apiKey.slice(0, 4) + "...)" : "❌ 未配置"}`);
+      if (!apiKey) throw new Error("DeepSeek API Key 未配置（VITE_DEEPSEEK_API_KEY），请在 Vercel 环境变量中添加");
       const response = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -133,10 +138,12 @@ export default function GraphicDesignModule() {
     setIsImageLoading(true);
     setGeneratedImageUrl("");
     setErrorMsg("");
+    setDebugInfo("正在连接即梦 API...");
 
     try {
       const apiKey = import.meta.env.VITE_VOLCENGINE_API_KEY || "";
-      if (!apiKey) throw new Error("未配置即梦 API Key（VITE_VOLCENGINE_API_KEY）");
+      setDebugInfo(`火山方舟 Key 状态: ${apiKey ? "已配置 (前10位: " + apiKey.slice(0, 10) + "...)" : "❌ 未配置"}`);
+      if (!apiKey) throw new Error("即梦 API Key 未配置（VITE_VOLCENGINE_API_KEY），请在 Vercel 环境变量中添加");
 
       const size = SIZE_MAP[selectedSize];
       const styleNames: Record<string, string> = {
@@ -511,6 +518,23 @@ export default function GraphicDesignModule() {
                     maxWidth: 500,
                   }}>
                     ⚠️ {errorMsg}
+                  </div>
+                )}
+
+                {/* 调试信息 */}
+                {debugInfo && (
+                  <div style={{
+                    marginTop: 12,
+                    padding: 10,
+                    background: "rgba(99,102,241,0.1)",
+                    border: "1px solid rgba(99,102,241,0.3)",
+                    borderRadius: 8,
+                    color: "#818cf8",
+                    fontSize: 12,
+                    maxWidth: 500,
+                    fontFamily: "monospace",
+                  }}>
+                    🔍 {debugInfo}
                   </div>
                 )}
               </div>
