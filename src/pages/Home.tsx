@@ -413,7 +413,7 @@ export default function Home() {
                             <Bot className="w-3.5 h-3.5" style={{ color: "#4A90E2" }} />
                           </div>
                         )}
-                        <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${msg.role === "user" ? "rounded-br-md" : "rounded-bl-md"}`}
+                        <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed whitespace-pre-wrap break-words ${msg.role === "user" ? "rounded-br-md" : "rounded-bl-md"}`}
                           style={{
                             background: msg.role === "user" ? "linear-gradient(135deg, #4A90E2, #6BA3E0)" : "white",
                             color: msg.role === "user" ? "#fff" : "var(--color-text)",

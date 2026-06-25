@@ -242,7 +242,7 @@ export default function GraphicDesignModule() {
                   </>
                 )}
               </button>
-              {generatedImage && (
+              {generatedContent && (
                 <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#a0a0a0] hover:text-white transition-all">
                   <Download className="w-3.5 h-3.5" />
                   下载
