@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Palette,
@@ -16,10 +16,48 @@ import {
   Bookmark,
   Loader2,
   Bot,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/components/layout/AppLayout";
 
+// ── Error Boundary ────────────────────────────────────────────────
+class ModuleErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; errorMsg: string }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, errorMsg: "" };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, errorMsg: error.message };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <AppLayout title="平面设计">
+          <div className="flex items-center justify-center h-[80vh]">
+            <div className="text-center p-8">
+              <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+              <p className="text-lg font-medium text-gray-800 mb-2">页面加载异常</p>
+              <p className="text-sm text-gray-500 mb-4">{this.state.errorMsg}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-violet-500 text-white rounded-lg text-sm hover:bg-violet-600"
+              >
+                刷新页面
+              </button>
+            </div>
+          </div>
+        </AppLayout>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ── Data ─────────────────────────────────────────────────────────
 const templateCategories = [
   { id: "all", label: "全部" },
   { id: "poster", label: "海报" },
@@ -43,15 +81,23 @@ const stylePresets = [
   { id: "futuristic", label: "科幻", desc: "未来感" },
   { id: "cute", label: "可爱", desc: "卡通风格" },
   { id: "elegant", label: "优雅", desc: "高端大气" },
-  { id: "bold", label: " bold", desc: "视觉冲击" },
+  { id: "bold", label: "大胆", desc: "视觉冲击" },
 ];
 
-export default function GraphicDesignModule() {
+const sizeMap: Record<string, { width: number; height: number }> = {
+  "1:1": { width: 1024, height: 1024 },
+  "4:3": { width: 1280, height: 960 },
+  "9:16": width: 768, height: 1080 },
+};
+
+// ── Component ─────────────────────────────────────────────────────
+function GraphicDesignInner() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState("minimal");
   const [intensity, setIntensity] = useState(50);
   const [selectedSize, setSelectedSize] = useState("1:1");
@@ -62,26 +108,13 @@ export default function GraphicDesignModule() {
       ? templates
       : templates.filter((t) => t.category === activeCategory);
 
-  const handleGenerate = async () => {
-    if (!prompt.trim() || isGenerating) return;
-    setIsGenerating(true);
-    setGeneratedContent(null);
-    setErrorMsg("");
+  // ── DeepSeek 流式文字生成 ─────────────────────────────────────
+  const callDeepSeek = useCallback(
+    async (userMessage: string): Promise<string | null> => {
+      const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
+      if (!apiKey) return null;
 
-    const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
-    if (!apiKey) {
-      setErrorMsg("API Key 未配置");
-      setIsGenerating(false);
-      return;
-    }
-
-    const selectedTpl = selectedTemplate
-      ? templates.find((t) => t.id === selectedTemplate)
-      : null;
-    const styleName = stylePresets.find((s) => s.id === selectedStyle)?.label || selectedStyle;
-
-    try {
-      const response = await fetch("https://api.deepseek.com/chat/completions", {
+      const res = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,54 +125,141 @@ export default function GraphicDesignModule() {
           messages: [
             {
               role: "system",
-              content: "你是一位资深的平面设计师和视觉创意专家。请根据用户的要求，生成专业的设计方案建议。用中文回复，格式清晰，包含设计理念、配色方案、排版布局、视觉元素等板块。",
+              content:
+                "你是一位资深的平面设计师和视觉创意专家。请根据用户的要求，生成专业的设计方案建议。用中文回复，格式清晰，包含设计理念、配色方案、排版布局、视觉元素等板块。控制在300字以内。",
             },
-            {
-              role: "user",
-              content: `请为以下项目生成一个设计方案：\n- 模板类型：${selectedTpl?.name || "通用"}\n- 风格：${styleName}\n- 创意强度：${intensity}%\n- 详细描述：${prompt}`,
-            },
+            { role: "user", content: userMessage },
           ],
           stream: true,
           temperature: 0.8,
-          max_tokens: 2048,
+          max_tokens: 1024,
         }),
       });
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => "");
-        setErrorMsg(`API 请求失败 (${response.status}): ${errText}`);
-        setIsGenerating(false);
-        return;
-      }
+      if (!res.ok) return null;
 
-      const reader = response.body?.getReader();
+      const reader = res.body?.getReader();
+      if (!reader) return null;
+
       const decoder = new TextDecoder();
       let fullContent = "";
       setGeneratedContent("");
 
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6);
-          if (data === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              fullContent += delta;
-              setGeneratedContent(fullContent);
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6);
+            if (data === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) {
+                fullContent += delta;
+                setGeneratedContent(fullContent);
+              }
+            } catch {
+              /* ignore parse errors */
             }
-          } catch { /* ignore */ }
+          }
         }
+      } catch (e) {
+        // stream read error — partial content is OK
       }
-      setIsGenerating(false);
-    } catch (err: any) {
-      setErrorMsg(`网络错误：${err.message || "连接失败"}`);
-      setIsGenerating(false);
+
+      return fullContent || null;
+    },
+    []
+  );
+
+  // ── 即梦 Seedream 图片生成 ─────────────────────────────────────
+  const callSeedream = useCallback(
+    async (imagePrompt: string): Promise<string | null> => {
+      const apiKey = import.meta.env.VITE_VOLCENGINE_API_KEY;
+      if (!apiKey) return null;
+
+      const size = sizeMap[selectedSize] || sizeMap["1:1"];
+
+      try {
+        const res = await fetch(
+          "https://ark.cn-beijing.volces.com/api/v3/images/generations",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: "doubao-seedream-5-0-260128",
+              prompt: imagePrompt,
+              n: 1,
+              size: `${size.width}*${size.height}`,
+            }),
+          }
+        );
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "");
+          console.error("Seedream API error:", res.status, errText);
+          return null;
+        }
+
+        const data = await res.json();
+        const imageUrl = data?.data?.[0]?.url || data?.data?.[0]?.b64_json || null;
+
+        if (imageUrl && imageUrl.startsWith("data:image")) {
+          return imageUrl; // base64 data URI
+        } else if (imageUrl) {
+          return imageUrl; // URL string
+        }
+
+        console.log("Seedream response:", JSON.stringify(data).slice(0, 500));
+        return null;
+      } catch (err: any) {
+        console.error("Seedream network error:", err);
+        return null;
+      }
+    },
+    [selectedSize]
+  );
+
+  // ── 主生成流程 ────────────────────────────────────────────────
+  const handleGenerate = async () => {
+    if (!prompt.trim() || isGenerating) return;
+    setIsGenerating(true);
+    setGeneratedContent(null);
+    setGeneratedImageUrl(null);
+    setErrorMsg("");
+
+    const selectedTpl = selectedTemplate
+      ? templates.find((t) => t.id === selectedTemplate)
+      : null;
+    const styleName =
+      stylePresets.find((s) => s.id === selectedStyle)?.label || selectedStyle;
+
+    // 构建提示词
+    const designPrompt = `请为以下项目生成一个设计方案：\n- 模板类型：${selectedTpl?.name || "通用"}\n- 风格：${styleName}\n- 创意强度：${intensity}%\n- 详细描述：${prompt}`;
+
+    // 图片生成的 prompt（英文效果更好）
+    const imagePrompt = `Professional graphic design, ${styleName} style, ${prompt}, high quality, clean composition, modern design aesthetic`;
+
+    // 并行调用：DeepSeek 文字 + 即梦 图片
+    const [, imageUrl] = await Promise.all([
+      callDeepSeek(designPrompt),
+      callSeedream(imagePrompt),
+    ]);
+
+    if (imageUrl) {
+      setGeneratedImageUrl(imageUrl);
+    }
+
+    setIsGenerating(false);
+
+    if (!generatedContent && !imageUrl) {
+      setErrorMsg("生成失败，请检查网络连接后重试");
     }
   };
 
@@ -147,9 +267,9 @@ export default function GraphicDesignModule() {
     <AppLayout title="平面设计" fullWidth>
       <div className="h-[calc(100vh-0px)] flex bg-[#0a0a0a]">
         {/* Left Panel - Templates */}
-        <div className="w-[280px] bg-[#0d0d0d] border-r border-[#1a1a1a] flex flex-col">
+        <div className="w-[280px] bg-[#0d0d0d] border-r border-[#1a1a1a] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="p-4 border-b border-[#1a1a1a]">
+          <div className="p-4 border-b border-[#1a1a1a] flex-shrink-0">
             <div className="flex items-center gap-2 mb-1">
               <Palette className="w-5 h-5 text-[#a29bfe]" />
               <h2 className="text-sm font-medium text-white">模板库</h2>
@@ -158,7 +278,7 @@ export default function GraphicDesignModule() {
           </div>
 
           {/* Categories */}
-          <div className="p-3 border-b border-[#1a1a1a]">
+          <div className="p-3 border-b border-[#1a1a1a] flex-shrink-0">
             <div className="flex flex-wrap gap-1.5">
               {templateCategories.map((cat) => (
                 <button
@@ -200,16 +320,16 @@ export default function GraphicDesignModule() {
                   <p className="text-sm text-white truncate">{tpl.name}</p>
                   <p className="text-[10px] text-[#666]">{tpl.category}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#666] group-hover:text-white transition-colors" />
+                <ChevronRight className="w-4 h-4 text-[#666] group-hover:text-white transition-colors flex-shrink-0" />
               </button>
             ))}
           </div>
         </div>
 
         {/* Center - Canvas */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Toolbar */}
-          <div className="h-12 flex items-center justify-between px-4 border-b border-[#1a1a1a]">
+          <div className="h-12 flex items-center justify-between px-4 border-b border-[#1a1a1a] flex-shrink-0">
             <div className="flex items-center gap-2">
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#a0a0a0] hover:text-white transition-all">
                 <Upload className="w-3.5 h-3.5" />
@@ -243,7 +363,7 @@ export default function GraphicDesignModule() {
                   </>
                 )}
               </button>
-              {generatedContent && (
+              {(generatedImageUrl || generatedContent) && (
                 <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#a0a0a0] hover:text-white transition-all">
                   <Download className="w-3.5 h-3.5" />
                   下载
@@ -253,56 +373,97 @@ export default function GraphicDesignModule() {
           </div>
 
           {/* Canvas Area */}
-          <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a]">
-            <div className="relative w-full max-w-[660px]">
-              {generatedContent !== null ? (
+          <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a] overflow-auto">
+            <div className="relative w-full max-w-[700px]">
+              {/* 有内容时展示结果 */}
+              {(generatedImageUrl || generatedContent) && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="w-full max-h-[420px] overflow-y-auto bg-gradient-to-br from-violet-500/5 to-purple-500/5 rounded-xl border border-[#a29bfe]/20 p-6"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-4"
                 >
-                  <div className="flex items-center gap-2 mb-4">
-                    <Bot className="w-5 h-5 text-[#a29bfe]" />
-                    <span className="text-sm font-medium text-white">AI 设计方案</span>
-                    {isGenerating && <Loader2 className="w-4 h-4 animate-spin text-[#a29bfe]" />}
-                  </div>
-                  <div className="text-sm text-[#d0d0d0] leading-relaxed whitespace-pre-wrap">
-                    {generatedContent || "..."}
-                  </div>
+                  {/* 生成的图片 */}
+                  {generatedImageUrl && (
+                    <div className="rounded-xl overflow-hidden border border-[#a29bfe]/20">
+                      <img
+                        src={generatedImageUrl}
+                        alt="AI 生成的设计图"
+                        className="w-full h-auto block"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                          setErrorMsg("图片加载失败，请重试");
+                        }}
+                      />
+                      <div className="bg-[#141414] px-4 py-2 flex items-center justify-between">
+                        <span className="text-xs text-[#a0a0a0]">即梦 AI 生成</span>
+                        <span className="text-[10px] text-[#555]">{selectedSize}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 设计方案文字 */}
+                  {generatedContent && (
+                    <div className="bg-gradient-to-br from-violet-500/5 to-purple-500/5 rounded-xl border border-[#a29bfe]/20 p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Bot className="w-4 h-4 text-[#a29bfe]" />
+                        <span className="text-xs font-medium text-white">
+                          AI 设计方案
+                        </span>
+                        {isGenerating && (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#a29bfe]" />
+                        )}
+                      </div>
+                      <div className="text-xs text-[#d0d0d0] leading-relaxed whitespace-pre-wrap">
+                        {generatedContent}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 正在生成中且还没有结果时的 loading */}
+                  {isGenerating && !generatedImageUrl && !generatedContent && (
+                    <div className="text-center py-16">
+                      <div className="relative w-14 h-14 mx-auto mb-4">
+                        <div className="absolute inset-0 rounded-full border-2 border-[#a29bfe]/20" />
+                        <div className="absolute inset-0 rounded-full border-2-transparent border-t-[#a29bfe] animate-spin" />
+                        <Sparkles className="absolute inset-0 m-auto w-5 h-5 text-[#a29bfe]" />
+                      </div>
+                      <p className="text-white text-sm font-medium">AI 创作中...</p>
+                      <p className="text-xs text-[#a0a0a0] mt-1">
+                        正在通过即梦 + DeepSeek 生成设计
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 错误信息 */}
                   {errorMsg && (
-                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                      <p className="text-xs text-red-400">{errorMsg}</p>
+                    <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-red-400">{errorMsg}</p>
+                      </div>
                     </div>
                   )}
                 </motion.div>
-              ) : (
-                <div className="w-full min-h-[400px] bg-[#141414] rounded-xl border border-dashed border-[#2a2a2a] flex flex-col items-center justify-center">
+              )}
+
+              {/* 空状态（没有任何结果时） */}
+              {!generatedImageUrl && !generatedContent && (
+                <div className="w-full min-h-[380px] bg-[#141414] rounded-xl border border-dashed border-[#2a2a2a] flex flex-col items-center justify-center">
                   {isGenerating ? (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-center"
-                    >
-                      <div className="relative w-16 h-16 mx-auto mb-4">
+                    <div className="text-center py-8">
+                      <div className="relative w-14 h-14 mx-auto mb-4">
                         <div className="absolute inset-0 rounded-full border-2 border-[#a29bfe]/20" />
                         <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#a29bfe] animate-spin" />
-                        <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-[#a29bfe]" />
+                        <Sparkles className="absolute inset-0 m-auto w-5 h-5 text-[#a29bfe]" />
                       </div>
-                      <p className="text-white font-medium">AI创作中...</p>
+                      <p className="text-white text-sm font-medium">AI 创作中...</p>
                       <p className="text-xs text-[#a0a0a0] mt-1">
-                        正在生成设计方案
+                        正在通过即梦 + DeepSeek 生成设计
                       </p>
-                    </motion.div>
-                  ) : errorMsg ? (
-                    <div className="text-center p-6">
-                      <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
-                        <Sparkles className="w-6 h-6 text-red-400" />
-                      </div>
-                      <p className="text-sm text-red-400">{errorMsg}</p>
                     </div>
                   ) : (
                     <>
-                      <Image className="w-12 h-12 text-[#333] mb-3" />
+                      <Image className="w-11 h-11 text-[#333] mb-3" />
                       <p className="text-sm text-[#666]">
                         {selectedTemplate
                           ? "输入提示词开始生成"
@@ -317,18 +478,20 @@ export default function GraphicDesignModule() {
         </div>
 
         {/* Right Panel - Parameters */}
-        <div className="w-[280px] bg-[#0d0d0d] border-l border-[#1a1a1a] flex flex-col">
-          <div className="p-4 border-b border-[#1a1a1a]">
+        <div className="w-[280px] bg-[#0d0d0d] border-l border-[#1a1a1a] flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-[#1a1a1a] flex-shrink-0">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-[#a29bfe]" />
               <h3 className="text-sm font-medium text-white">参数调整</h3>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 space-y-5">
             {/* Prompt Input */}
             <div>
-              <label className="text-xs text-[#a0a0a0] mb-2 block">创作描述</label>
+              <label className="text-xs text-[#a0a0a0] mb-2 block">
+                创作描述
+              </label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -340,7 +503,9 @@ export default function GraphicDesignModule() {
 
             {/* Style Selection */}
             <div>
-              <label className="text-xs text-[#a0a0a0] mb-2 block">风格选择</label>
+              <label className="text-xs text-[#a0a0a0] mb-2 block">
+                风格选择
+              </label>
               <div className="grid grid-cols-2 gap-2">
                 {stylePresets.map((style) => (
                   <button
@@ -382,7 +547,9 @@ export default function GraphicDesignModule() {
 
             {/* Size Selection */}
             <div>
-              <label className="text-xs text-[#a0a0a0] mb-2 block">输出尺寸</label>
+              <label className="text-xs text-[#a0a0a0] mb-2 block">
+                输出尺寸
+              </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { label: "1:1", desc: "方形" },
@@ -408,7 +575,7 @@ export default function GraphicDesignModule() {
           </div>
 
           {/* Bottom Actions */}
-          <div className="p-4 border-t border-[#1a1a1a] space-y-2">
+          <div className="p-4 border-t border-[#1a1a1a] space-y-2 flex-shrink-0">
             <button className="w-full flex items-center justify-center gap-2 py-2 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-[#a0a0a0] hover:text-white transition-colors">
               <Bookmark className="w-3.5 h-3.5" />
               保存为模板
@@ -417,5 +584,14 @@ export default function GraphicDesignModule() {
         </div>
       </div>
     </AppLayout>
+  );
+}
+
+// ── Export with Error Boundary ───────────────────────────────────
+export default function GraphicDesignModule() {
+  return (
+    <ModuleErrorBoundary>
+      <GraphicDesignInner />
+    </ModuleErrorBoundary>
   );
 }
