@@ -87,7 +87,7 @@ const stylePresets = [
 const sizeMap: Record<string, { width: number; height: number }> = {
   "1:1": { width: 1024, height: 1024 },
   "4:3": { width: 1280, height: 960 },
-  "9:16": width: 768, height: 1080 },
+  "9:16": { width: 768, height: 1080 },
 };
 
 // ── Component ─────────────────────────────────────────────────────
