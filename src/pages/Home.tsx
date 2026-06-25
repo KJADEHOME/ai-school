@@ -268,7 +268,7 @@ export default function Home() {
       setTimeout(() => {
         const demoReplies = [
           "我理解你的感受，有时候停下来深呼吸一下会好很多。你想试试用文字来表达当下的心情吗？",
-          "你的情绪很有价值，每一种感受都值得被看见。要不要试试用创作来转化这份心情？",
+          "你的心情很有价值，每一种感受都值得被看见。要不要试试用创作来转化这份心情？",
           "我感受到了你的能量！这种状态很适合创作，要不要尝试一个创作挑战？",
           "谢谢你愿意和我分享。有时候把想法写下来，就是治愈的开始。你想聊聊创作的方向吗？",
         ];
@@ -316,7 +316,7 @@ export default function Home() {
         <motion.div className="relative z-10 text-center px-4 max-w-2xl mx-auto" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className="w-2 h-2 rounded-full bg-[#4A90E2] animate-breathe" />
-            <span className="text-sm" style={{ color: "#4A90E2" }}>skyvido · AI情绪创作疗愈平台</span>
+            <span className="text-sm" style={{ color: "#4A90E2" }}>skyvido · AI 创作创作疗愈平台</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "var(--color-text)" }}>
             今日，你的心情是什么颜色？
@@ -352,7 +352,7 @@ export default function Home() {
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)" }}>
                 <Brain className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="flex-1 text-sm text-slate-400">和心流伴侣聊聊...</span>
+              <span className="flex-1 text-sm text-slate-400">和SkyVido 助手聊聊...</span>
               <div className="p-1.5 rounded-lg" style={{ background: "linear-gradient(135deg, #4A90E2, #6BA3E0)", color: "#fff" }}>
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
@@ -401,7 +401,7 @@ export default function Home() {
                         <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: "rgba(74,144,226,0.1)" }}>
                           <Bot className="w-6 h-6" style={{ color: "#4A90E2" }} />
                         </div>
-                        <p className="text-sm" style={{ color: "var(--color-text)" }}>你好，我是你的心流伴侣</p>
+                        <p className="text-sm" style={{ color: "var(--color-text)" }}>你好，我是你的SkyVido 助手</p>
                         <p className="text-xs mt-1" style={{ color: "var(--color-text-secondary)" }}>告诉我你现在的心情，我陪你聊聊</p>
                       </div>
                     )}
