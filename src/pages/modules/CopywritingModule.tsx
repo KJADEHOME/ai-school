@@ -189,8 +189,20 @@ export default function CopywritingModule() {
     const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || "";
 
     if (!DEEPSEEK_API_KEY) {
-      onChunk("\n\n⚠️ API Key 未配置，请在 .env 文件中设置 VITE_DEEPSEEK_API_KEY");
-      onComplete();
+      const assistantMsg = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant" as const,
+        content: "⚠️ API Key 未配置，请在 .env 文件中设置 VITE_DEEPSEEK_API_KEY",
+        timestamp: Date.now(),
+      };
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConvId
+            ? { ...c, messages: [...c.messages, assistantMsg], updatedAt: Date.now() }
+            : c
+        )
+      );
+      setIsGenerating(false);
       return;
     }
 
@@ -470,7 +482,7 @@ export default function CopywritingModule() {
                 className="w-2 h-2 rounded-full animate-pulse"
                 style={{ backgroundColor: currentMode.color }}
               />
-              <span className="text-xs text-[#a0a0a0]">朋友公司模型</span>
+              <span className="text-xs text-[#a0a0a0]">DeepSeek</span>
             </div>
           </div>
         </div>

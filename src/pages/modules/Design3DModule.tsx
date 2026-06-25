@@ -17,6 +17,8 @@ import {
   RefreshCw,
   ThumbsUp,
   ThumbsDown,
+  Loader2,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/components/layout/AppLayout";
@@ -72,20 +74,94 @@ export default function Design3DModule() {
   const [selectedStyle, setSelectedStyle] = useState("realistic");
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasResult, setHasResult] = useState(false);
+  const [generatedSpec, setGeneratedSpec] = useState("");
   const [rotation, setRotation] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [history] = useState<GeneratedModel[]>(mockHistory);
+  const [errorMsg, setErrorMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (generateMode === "text" && !prompt.trim()) return;
     if (generateMode === "image" && !uploadedImage) return;
     setIsGenerating(true);
-    setTimeout(() => {
+    setGeneratedSpec("");
+    setErrorMsg("");
+
+    const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      setErrorMsg("API Key 未配置");
       setIsGenerating(false);
       setHasResult(true);
-    }, 2500);
+      return;
+    }
+
+    const styleName = stylePresets.find((s) => s.id === selectedStyle)?.label || selectedStyle;
+
+    try {
+      const response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content: "你是一位专业的3D建模师和CG艺术家。根据用户描述，生成详细的3D模型规格说明。包含：模型结构、推荐材质、尺寸参考、建模步骤建议。用中文回复，格式清晰，内容专业。",
+            },
+            {
+              role: "user",
+              content: `请为以下要求生成3D模型规格说明：\n- 描述：${prompt}\n- 风格：${styleName}\n- 生成方式：${generateMode === "text" ? "文生3D" : "图生3D"}`,
+            },
+          ],
+          stream: true,
+          temperature: 0.8,
+          max_tokens: 2048,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "");
+        setErrorMsg(`API 请求失败 (${response.status}): ${errText}`);
+        setIsGenerating(false);
+        setHasResult(true);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+      setHasResult(true);
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          if (data === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullContent += delta;
+              setGeneratedSpec(fullContent);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      setIsGenerating(false);
+    } catch (err: any) {
+      setErrorMsg(`网络错误：${err.message || "连接失败"}`);
+      setIsGenerating(false);
+      setHasResult(true);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,88 +467,108 @@ export default function Design3DModule() {
                   {generateMode === "text" ? "正在生成3D模型" : "正在转换3D模型"}
                 </p>
                 <p className="text-xs text-[#a0a0a0] mt-1">
-                  腾讯混元3D · 预计需要20-40秒
+                  DeepSeek AI · 预计需要10-30秒
                 </p>
               </div>
             ) : hasResult ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: zoom }}
-                className="relative"
-                style={{ perspective: 800 }}
-              >
-                {/* Generated 3D Model */}
-                <div
-                  className="w-56 h-56 relative cursor-grab active:cursor-grabbing"
-                  style={{ transformStyle: "preserve-3d" }}
-                  onClick={() => setRotation(rotation + 30)}
+              <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 relative z-10 overflow-y-auto">
+                {/* 3D Preview Box */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: zoom }}
+                  className="relative"
+                  style={{ perspective: 800 }}
                 >
-                  {/* Model faces with different colors based on viewMode */}
-                  {[
-                    { t: "translateZ(112px)", c: "40", label: "前" },
-                    { t: "translateZ(-112px) rotateY(180deg)", c: "25", label: "后" },
-                    { t: "rotateY(-90deg) translateZ(112px)", c: "30", label: "左" },
-                    { t: "rotateY(90deg) translateZ(112px)", c: "30", label: "右" },
-                    { t: "rotateX(90deg) translateZ(112px)", c: "50", label: "上" },
-                    { t: "rotateX(-90deg) translateZ(112px)", c: "20", label: "下" },
-                  ].map((face, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        "absolute inset-0 flex items-center justify-center border transition-all",
-                        viewMode === "wireframe"
-                          ? "bg-transparent border-[#74b9ff]"
-                          : viewMode === "texture"
-                            ? "border-[#74b9ff]/60"
-                            : "border-[#74b9ff]/40"
-                      )}
-                      style={{
-                        transform: face.t,
-                        backgroundColor:
+                  <div
+                    className="w-56 h-56 relative cursor-grab active:cursor-grabbing"
+                    style={{ transformStyle: "preserve-3d" }}
+                    onClick={() => setRotation(rotation + 30)}
+                  >
+                    {[
+                      { t: "translateZ(112px)", c: "40", label: "前" },
+                      { t: "translateZ(-112px) rotateY(180deg)", c: "25", label: "后" },
+                      { t: "rotateY(-90deg) translateZ(112px)", c: "30", label: "左" },
+                      { t: "rotateY(90deg) translateZ(112px)", c: "30", label: "右" },
+                      { t: "rotateX(90deg) translateZ(112px)", c: "50", label: "上" },
+                      { t: "rotateX(-90deg) translateZ(112px)", c: "20", label: "下" },
+                    ].map((face, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "absolute inset-0 flex items-center justify-center border transition-all",
                           viewMode === "wireframe"
-                            ? "transparent"
+                            ? "bg-transparent border-[#74b9ff]"
                             : viewMode === "texture"
-                              ? `rgba(6,182,212,0.${face.c})`
-                              : `rgba(6,182,212,0.${Math.floor(Number(face.c) * 0.6)})`,
-                        backgroundImage:
-                          viewMode === "texture"
-                            ? "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent)"
+                              ? "border-[#74b9ff]/60"
+                              : "border-[#74b9ff]/40"
+                        )}
+                        style={{
+                          transform: face.t,
+                          backgroundColor:
+                            viewMode === "wireframe"
+                              ? "transparent"
+                              : viewMode === "texture"
+                                ? `rgba(6,182,212,0.${face.c})`
+                                : `rgba(6,182,212,0.${Math.floor(Number(face.c) * 0.6)})`,
+                          backgroundImage:
+                            viewMode === "texture"
+                              ? "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent)"
+                              : "none",
+                        }}
+                      >
+                        {viewMode === "wireframe" && (
+                          <span className="text-[10px] text-[#74b9ff]/50">
+                            {face.label}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        transform: "translateZ(112px)",
+                        boxShadow:
+                          viewMode === "preview"
+                            ? "0 0 40px rgba(6,182,212,0.3), inset 0 0 40px rgba(6,182,212,0.1)"
                             : "none",
                       }}
-                    >
-                      {viewMode === "wireframe" && (
-                        <span className="text-[10px] text-[#74b9ff]/50">
-                          {face.label}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* Edges highlight */}
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      transform: "translateZ(112px)",
-                      boxShadow:
-                        viewMode === "preview"
-                          ? "0 0 40px rgba(6,182,212,0.3), inset 0 0 40px rgba(6,182,212,0.1)"
-                          : "none",
-                    }}
-                  />
-                </div>
-
-                {/* Model info overlay */}
-                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                  <div className="px-3 py-1.5 bg-[#141414] border border-[#2a2a2a] rounded-lg">
-                    <p className="text-xs text-[#a0a0a0]">
-                      {generateMode === "text"
-                        ? prompt.slice(0, 20)
-                        : "图片生成"}
-                      ...
-                    </p>
+                    />
                   </div>
+                </motion.div>
+
+                {/* AI Spec Text */}
+                {generatedSpec && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full max-w-xl bg-[#0d0d0d] border border-[#74b9ff]/20 rounded-xl p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bot className="w-4 h-4 text-[#74b9ff]" />
+                      <span className="text-xs font-medium text-[#74b9ff]">AI 3D规格说明</span>
+                    </div>
+                    <div className="text-xs text-[#c0c0c0] leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto">
+                      {generatedSpec}
+                    </div>
+                  </motion.div>
+                )}
+
+                {errorMsg && (
+                  <div className="w-full max-w-xl bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                    <p className="text-xs text-red-400">{errorMsg}</p>
+                  </div>
+                )}
+
+                {/* Model info */}
+                <div className="px-3 py-1.5 bg-[#141414] border border-[#2a2a2a] rounded-lg">
+                  <p className="text-xs text-[#a0a0a0]">
+                    {generateMode === "text"
+                      ? prompt.slice(0, 30)
+                      : "图片生成"}
+                    {(generateMode === "text" && prompt.length > 30) ? "..." : ""}
+                  </p>
                 </div>
-              </motion.div>
+              </div>
             ) : (
               <div className="text-center relative z-10">
                 <div className="w-20 h-20 rounded-2xl bg-[#74b9ff]/10 flex items-center justify-center mx-auto mb-4">
@@ -484,7 +580,7 @@ export default function Design3DModule() {
                     : "上传图片，转换为3D模型"}
                 </p>
                 <p className="text-xs text-[#a0a0a0] mt-1">
-                  接入腾讯混元3D · 文生3D / 图生3D
+                  DeepSeek AI · 文生3D / 图生3D
                 </p>
               </div>
             )}
@@ -624,7 +720,7 @@ export default function Design3DModule() {
                 <Box className="w-4 h-4 text-[#74b9ff]" />
               </div>
               <div>
-                <p className="text-xs text-white">腾讯混元3D</p>
+                <p className="text-xs text-white">DeepSeek AI</p>
                 <p className="text-[10px] text-[#666]">文生3D / 图生3D</p>
               </div>
             </div>

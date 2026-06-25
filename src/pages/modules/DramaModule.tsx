@@ -19,6 +19,8 @@ import {
   Sparkles,
   Download,
   Settings,
+  Loader2,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/components/layout/AppLayout";
@@ -96,6 +98,10 @@ export default function DramaModule() {
     cameraAngle: "正面",
     duration: 3,
   });
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
+  const [aiContent, setAiContent] = useState("");
+  const [aiTitle, setAiTitle] = useState("");
+  const [aiError, setAiError] = useState("");
 
   const activeBoard = storyboards.find((s) => s.id === activeBoardId);
   const totalDuration = storyboards.reduce((sum, s) => sum + s.duration, 0);
@@ -152,6 +158,107 @@ export default function DramaModule() {
       default:
         return "bg-[#2a2a2a] text-[#666]";
     }
+  };
+
+  const callDeepSeek = async (systemPrompt: string, userPrompt: string, title: string) => {
+    setIsAIGenerating(true);
+    setAiContent("");
+    setAiError("");
+    setAiTitle(title);
+
+    const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      setAiError("API Key 未配置");
+      setIsAIGenerating(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          stream: true,
+          temperature: 0.9,
+          max_tokens: 2048,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "");
+        setAiError(`API 请求失败 (${response.status})`);
+        setIsAIGenerating(false);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          if (data === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullContent += delta;
+              setAiContent(fullContent);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      setIsAIGenerating(false);
+    } catch (err: any) {
+      setAiError(`网络错误：${err.message || "连接失败"}`);
+      setIsAIGenerating(false);
+    }
+  };
+
+  const handleGenerateStoryboard = () => {
+    if (!activeBoard) return;
+    callDeepSeek(
+      "你是一位专业的影视编剧和分镜师。根据提供的分镜信息，生成详细的场景可视化描述，包括：画面构图、光线氛围、色彩基调、角色动作和表情细节。用中文回复，语言生动有画面感。",
+      `请为以下分镜生成详细的可视化描述：\n- 标题：${activeBoard.title}\n- 场景描述：${activeBoard.description}\n- 地点：${activeBoard.location}\n- 角色：${activeBoard.characters.join("，")}\n- 镜头角度：${activeBoard.cameraAngle}\n- 时长：${activeBoard.duration}秒`,
+      `场景可视化 - ${activeBoard.title}`
+    );
+    setStoryboards(
+      storyboards.map((s) =>
+        s.id === activeBoardId
+          ? { ...s, status: "generated" as const }
+          : s
+      )
+    );
+  };
+
+  const handleSynthesizeVideo = () => {
+    if (!activeBoard) return;
+    callDeepSeek(
+      "你是一位专业的影视编剧。根据分镜信息，为场景撰写对话脚本和旁白。包含：角色对话、动作指示、旁白内容、音效建议。用中文回复，格式规范。",
+      `请为以下分镜编写对话脚本和旁白：\n- 标题：${activeBoard.title}\n- 场景描述：${activeBoard.description}\n- 地点：${activeBoard.location}\n- 角色：${activeBoard.characters.join("，")}\n- 镜头：${activeBoard.cameraAngle}\n- 时长：${activeBoard.duration}秒`,
+      `对话脚本 - ${activeBoard.title}`
+    );
+    setStoryboards(
+      storyboards.map((s) =>
+        s.id === activeBoardId
+          ? { ...s, status: "completed" as const }
+          : s
+      )
+    );
   };
 
   return (
@@ -327,7 +434,23 @@ export default function DramaModule() {
                 <div className="w-full max-w-2xl">
                   {/* Video Preview Placeholder */}
                   <div className="aspect-video bg-[#141414] rounded-xl border border-[#2a2a2a] flex flex-col items-center justify-center relative overflow-hidden">
-                    {activeBoard.status === "completed" ? (
+                    {(aiContent || aiError || isAIGenerating) ? (
+                      <div className="w-full h-full overflow-y-auto p-6 text-left">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Bot className="w-5 h-5 text-amber-400" />
+                          <span className="text-sm font-medium text-white">{aiTitle}</span>
+                          {isAIGenerating && <Loader2 className="w-4 h-4 animate-spin text-amber-400" />}
+                        </div>
+                        <div className="text-sm text-[#d0d0d0] leading-relaxed whitespace-pre-wrap">
+                          {aiContent || (isAIGenerating ? "AI 思考中..." : "")}
+                        </div>
+                        {aiError && (
+                          <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                            <p className="text-xs text-red-400">{aiError}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : activeBoard.status === "completed" ? (
                       <div className="text-center">
                         <Film className="w-16 h-16 text-amber-400 mx-auto mb-3" />
                         <p className="text-white font-medium">视频已生成</p>
@@ -343,7 +466,7 @@ export default function DramaModule() {
                         <p className="text-sm text-[#a0a0a0]">
                           {activeBoard.status === "generated"
                             ? "素材已准备，可合成视频"
-                            : "点击生成以创建视频片段"}
+                            : "点击「生成分镜」以创建视频片段"}
                         </p>
                       </div>
                     )}
@@ -519,35 +642,17 @@ export default function DramaModule() {
           </div>
           <div className="p-4 space-y-3">
             <button
-              onClick={() => {
-                if (activeBoard) {
-                  setStoryboards(
-                    storyboards.map((s) =>
-                      s.id === activeBoardId
-                        ? { ...s, status: "generated" as const }
-                        : s
-                    )
-                  );
-                }
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors"
+              onClick={handleGenerateStoryboard}
+              disabled={isAIGenerating}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-[#2a2a2a] disabled:text-[#666] text-white rounded-lg text-sm font-medium transition-colors"
             >
-              <Sparkles className="w-4 h-4" />
-              生成分镜
+              {isAIGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {isAIGenerating ? "生成中..." : "生成分镜"}
             </button>
             <button
-              onClick={() => {
-                if (activeBoard) {
-                  setStoryboards(
-                    storyboards.map((s) =>
-                      s.id === activeBoardId
-                        ? { ...s, status: "completed" as const }
-                        : s
-                    )
-                  );
-                }
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] text-white rounded-lg text-sm transition-colors"
+              onClick={handleSynthesizeVideo}
+              disabled={isAIGenerating}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
             >
               <Wand2 className="w-4 h-4" />
               合成视频

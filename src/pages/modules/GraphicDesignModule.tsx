@@ -14,6 +14,8 @@ import {
   Instagram,
   FileText,
   Bookmark,
+  Loader2,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/components/layout/AppLayout";
@@ -49,22 +51,95 @@ export default function GraphicDesignModule() {
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState("minimal");
   const [intensity, setIntensity] = useState(50);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const filteredTemplates =
     activeCategory === "all"
       ? templates
       : templates.filter((t) => t.category === activeCategory);
 
-  const handleGenerate = () => {
-    if (!prompt.trim()) return;
+  const handleGenerate = async () => {
+    if (!prompt.trim() || isGenerating) return;
     setIsGenerating(true);
-    setTimeout(() => {
-      setGeneratedImage("generated");
+    setGeneratedContent(null);
+    setErrorMsg("");
+
+    const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      setErrorMsg("API Key 未配置");
       setIsGenerating(false);
-    }, 2000);
+      return;
+    }
+
+    const selectedTpl = selectedTemplate
+      ? templates.find((t) => t.id === selectedTemplate)
+      : null;
+    const styleName = stylePresets.find((s) => s.id === selectedStyle)?.label || selectedStyle;
+
+    try {
+      const response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content: "你是一位资深的平面设计师和视觉创意专家。请根据用户的要求，生成专业的设计方案建议。用中文回复，格式清晰，包含设计理念、配色方案、排版布局、视觉元素等板块。",
+            },
+            {
+              role: "user",
+              content: `请为以下项目生成一个设计方案：\n- 模板类型：${selectedTpl?.name || "通用"}\n- 风格：${styleName}\n- 创意强度：${intensity}%\n- 详细描述：${prompt}`,
+            },
+          ],
+          stream: true,
+          temperature: 0.8,
+          max_tokens: 2048,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "");
+        setErrorMsg(`API 请求失败 (${response.status}): ${errText}`);
+        setIsGenerating(false);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+      setGeneratedContent("");
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          if (data === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullContent += delta;
+              setGeneratedContent(fullContent);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      setIsGenerating(false);
+    } catch (err: any) {
+      setErrorMsg(`网络错误：${err.message || "连接失败"}`);
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -178,23 +253,29 @@ export default function GraphicDesignModule() {
 
           {/* Canvas Area */}
           <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a]">
-            <div className="relative">
-              {generatedImage ? (
+            <div className="relative w-full max-w-[660px]">
+              {generatedContent !== null ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="w-[600px] h-[400px] bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-xl border border-[#a29bfe]/30 flex items-center justify-center"
+                  className="w-full max-h-[420px] overflow-y-auto bg-gradient-to-br from-violet-500/5 to-purple-500/5 rounded-xl border border-[#a29bfe]/20 p-6"
                 >
-                  <div className="text-center">
-                    <Image className="w-16 h-16 text-[#a29bfe] mx-auto mb-4" />
-                    <p className="text-white font-medium">生成完成</p>
-                    <p className="text-xs text-[#a0a0a0] mt-1">
-                      基于: {prompt}
-                    </p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Bot className="w-5 h-5 text-[#a29bfe]" />
+                    <span className="text-sm font-medium text-white">AI 设计方案</span>
+                    {isGenerating && <Loader2 className="w-4 h-4 animate-spin text-[#a29bfe]" />}
                   </div>
+                  <div className="text-sm text-[#d0d0d0] leading-relaxed whitespace-pre-wrap">
+                    {generatedContent || "..."}
+                  </div>
+                  {errorMsg && (
+                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <p className="text-xs text-red-400">{errorMsg}</p>
+                    </div>
+                  )}
                 </motion.div>
               ) : (
-                <div className="w-[600px] h-[400px] bg-[#141414] rounded-xl border border-dashed border-[#2a2a2a] flex flex-col items-center justify-center">
+                <div className="w-full min-h-[400px] bg-[#141414] rounded-xl border border-dashed border-[#2a2a2a] flex flex-col items-center justify-center">
                   {isGenerating ? (
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -208,9 +289,16 @@ export default function GraphicDesignModule() {
                       </div>
                       <p className="text-white font-medium">AI创作中...</p>
                       <p className="text-xs text-[#a0a0a0] mt-1">
-                        正在生成你的设计
+                        正在生成设计方案
                       </p>
                     </motion.div>
+                  ) : errorMsg ? (
+                    <div className="text-center p-6">
+                      <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
+                        <Sparkles className="w-6 h-6 text-red-400" />
+                      </div>
+                      <p className="text-sm text-red-400">{errorMsg}</p>
+                    </div>
                   ) : (
                     <>
                       <Image className="w-12 h-12 text-[#333] mb-3" />

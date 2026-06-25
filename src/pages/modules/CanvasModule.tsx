@@ -16,7 +16,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Type,
   Image,
@@ -27,6 +27,9 @@ import {
   Trash2,
   Play,
   Settings,
+  Loader2,
+  Bot,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AppLayout from "@/components/layout/AppLayout";
@@ -113,7 +116,7 @@ function AINode({ data, selected }: NodeProps<Node<{ label: string; model?: stri
         <span className="text-xs font-medium text-emerald-400">{data.label}</span>
       </div>
       <div className="px-3 py-2">
-        <p className="text-[10px] text-[#666]">模型: {data.model || "GPT-4"}</p>
+        <p className="text-[10px] text-[#666]">模型: {data.model || "DeepSeek"}</p>
       </div>
       <Handle type="source" position={Position.Right} className="!bg-[#10b981]" />
     </div>
@@ -168,7 +171,7 @@ export default function CanvasModule() {
       id: "2",
       type: "ai",
       position: { x: 400, y: 100 },
-      data: { label: "AI脚本生成", model: "朋友公司模型" },
+      data: { label: "AI脚本生成", model: "DeepSeek" },
     },
     {
       id: "3",
@@ -197,6 +200,10 @@ export default function CanvasModule() {
     { id: "e4-5", source: "4", target: "5" },
   ]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [workflowRunning, setWorkflowRunning] = useState(false);
+  const [workflowResult, setWorkflowResult] = useState("");
+  const [workflowError, setWorkflowError] = useState("");
+  const [showResult, setShowResult] = useState(false);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -233,6 +240,90 @@ export default function CanvasModule() {
         eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id)
       );
       setSelectedNode(null);
+    }
+  };
+
+  const runWorkflow = async () => {
+    setWorkflowRunning(true);
+    setWorkflowResult("");
+    setWorkflowError("");
+    setShowResult(true);
+
+    // Find text nodes
+    const textNodes = nodes.filter((n) => n.type === "text");
+    const inputContent = textNodes.map((n) => (n.data as any).content || "").filter(Boolean).join("\n");
+
+    if (!inputContent) {
+      setWorkflowError("未找到文本节点的内容，请先添加文本节点并输入内容");
+      setWorkflowRunning(false);
+      return;
+    }
+
+    const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      setWorkflowError("API Key 未配置");
+      setWorkflowRunning(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content: "你是一个创意工作流引擎。根据输入的文本内容，进行AI处理并生成创意输出。用中文回复，内容有创意、有价值。",
+            },
+            {
+              role: "user",
+              content: `请处理以下工作流输入内容：\n\n${inputContent}`,
+            },
+          ],
+          stream: true,
+          temperature: 0.8,
+          max_tokens: 2048,
+        }),
+      });
+
+      if (!response.ok) {
+        setWorkflowError(`API 请求失败 (${response.status})`);
+        setWorkflowRunning(false);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          if (data === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullContent += delta;
+              setWorkflowResult(fullContent);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      setWorkflowRunning(false);
+    } catch (err: any) {
+      setWorkflowError(`网络错误：${err.message || "连接失败"}`);
+      setWorkflowRunning(false);
     }
   };
 
@@ -306,13 +397,58 @@ export default function CanvasModule() {
 
             {/* Run Button */}
             <Panel position="top-right">
-              <button className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                <Play className="w-4 h-4" />
-                运行工作流
+              <button
+                onClick={runWorkflow}
+                disabled={workflowRunning}
+                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-[#2a2a2a] disabled:text-[#666] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                {workflowRunning ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+                {workflowRunning ? "运行中..." : "运行工作流"}
               </button>
             </Panel>
           </ReactFlow>
         </div>
+
+        {/* Workflow Result Panel */}
+        <AnimatePresence>
+          {showResult && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 320, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              className="bg-[#0d0d0d] border-l border-[#1a1a1a] overflow-hidden flex flex-col"
+            >
+              <div className="p-4 border-b border-[#1a1a1a] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-emerald-400" />
+                  <h3 className="text-sm font-medium text-white">工作流输出</h3>
+                  {workflowRunning && <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />}
+                </div>
+                <button
+                  onClick={() => setShowResult(false)}
+                  className="p-1 rounded hover:bg-[#1a1a1a] text-[#666] hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                {workflowError ? (
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <p className="text-xs text-red-400">{workflowError}</p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-[#d0d0d0] leading-relaxed whitespace-pre-wrap">
+                    {workflowResult || (workflowRunning ? "DeepSeek AI 思考中..." : "点击「运行工作流」开始处理")}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Right Properties Panel */}
         {selectedNode && (
