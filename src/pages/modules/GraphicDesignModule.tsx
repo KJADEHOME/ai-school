@@ -43,17 +43,16 @@ export default function GraphicDesignModule() {
   const [selectedStyle, setSelectedStyle] = useState("minimal");
   const [selectedSize, setSelectedSize] = useState("1:1");
   const [intensity, setIntensity] = useState(50);
-  // 聊天消息
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
-  // 图片生成
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  // 调试信息
-  const [debugInfo, setDebugInfo] = useState("");
+  const [statusText, setStatusText] = useState(""); // 状态显示
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const btnImageRef = useRef<HTMLButtonElement>(null);
+  const btnChatRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -61,18 +60,23 @@ export default function GraphicDesignModule() {
 
   /* ── DeepSeek 文字方案生成 ── */
   async function handleGenerateDesign() {
+    // 立即反馈
+    alert("✅ 点击被触发了！正在连接 DeepSeek...");
     if (!prompt.trim()) return;
     const userMsg = prompt.trim();
     setPrompt("");
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setIsChatLoading(true);
     setErrorMsg("");
-    setDebugInfo("正在连接 DeepSeek API...");
+    setStatusText("⏳ 正在连接 DeepSeek API...");
 
     try {
       const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY || "";
-      setDebugInfo(`API Key 状态: ${apiKey ? "已配置 (前4位: " + apiKey.slice(0, 4) + "...)" : "❌ 未配置"}`);
-      if (!apiKey) throw new Error("DeepSeek API Key 未配置（VITE_DEEPSEEK_API_KEY），请在 Vercel 环境变量中添加");
+      if (!apiKey) {
+        throw new Error("DeepSeek API Key 未配置（VITE_DEEPSEEK_API_KEY）");
+      }
+      setStatusText(`🔑 Key 已配置: ${apiKey.slice(0, 6)}...`);
+
       const response = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -81,8 +85,7 @@ export default function GraphicDesignModule() {
           messages: [
             {
               role: "system",
-              content:
-                "你是一位专业的平面设计师，擅长为用户创作各类设计方案。根据用户需求，给出详细的设计建议，包括配色、排版、元素搭配等。用中文回复，语气友好专业。",
+              content: "你是一位专业的平面设计师。根据用户需求，给出详细的设计建议，包括配色、排版、元素搭配等。用中文回复。",
             },
             { role: "user", content: userMsg },
           ],
@@ -98,6 +101,7 @@ export default function GraphicDesignModule() {
       const decoder = new TextDecoder();
       let assistantContent = "";
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+      setStatusText("📡 正在接收 AI 回复...");
 
       while (true) {
         const { done, value } = await reader.read();
@@ -120,13 +124,12 @@ export default function GraphicDesignModule() {
           }
         }
       }
+      setStatusText("✅ 完成！");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setErrorMsg(msg);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: `抱歉，生成时出现错误：${msg}` },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: `错误：${msg}` }]);
+      setStatusText(`❌ 失败: ${msg}`);
     } finally {
       setIsChatLoading(false);
     }
@@ -134,16 +137,20 @@ export default function GraphicDesignModule() {
 
   /* ── 即梦 Seedream 图片生成 ── */
   async function handleGenerateImage() {
+    // 立即反馈
+    alert("✅ 图片生成点击被触发！正在连接即梦 API...");
     if (!prompt.trim()) return;
     setIsImageLoading(true);
     setGeneratedImageUrl("");
     setErrorMsg("");
-    setDebugInfo("正在连接即梦 API...");
+    setStatusText("⏳ 正在连接即梦 API...");
 
     try {
       const apiKey = import.meta.env.VITE_VOLCENGINE_API_KEY || "";
-      setDebugInfo(`火山方舟 Key 状态: ${apiKey ? "已配置 (前10位: " + apiKey.slice(0, 10) + "...)" : "❌ 未配置"}`);
-      if (!apiKey) throw new Error("即梦 API Key 未配置（VITE_VOLCENGINE_API_KEY），请在 Vercel 环境变量中添加");
+      if (!apiKey) {
+        throw new Error("即梦 API Key 未配置（VITE_VOLCENGINE_API_KEY）");
+      }
+      setStatusText(`🔑 火山方舟 Key: ${apiKey.slice(0, 12)}...`);
 
       const size = SIZE_MAP[selectedSize];
       const styleNames: Record<string, string> = {
@@ -156,7 +163,7 @@ export default function GraphicDesignModule() {
       };
       const styleName = styleNames[selectedStyle] || "极简风格";
 
-      // Step 1: Submit image generation task
+      setStatusText("🎨 正在提交图片生成请求...");
       const submitResp = await fetch(
         "https://ark.cn-beijing.volces.com/api/v3/images/generations",
         {
@@ -169,35 +176,35 @@ export default function GraphicDesignModule() {
             model: "doubao-seedream-5-0-260128",
             prompt: `${styleName}，${prompt.trim()}。高质量，细节丰富`,
             n: 1,
-            size: `${size.width}*${size.height}`, // e.g. "1024*1024"
+            size: `${size.width}*${size.height}`,
           }),
         }
       );
 
       if (!submitResp.ok) {
         const errText = await submitResp.text();
-        throw new Error(`图片生成请求失败(${submitResp.status}): ${errText.slice(0, 200)}`);
+        throw new Error(`请求失败(${submitResp.status}): ${errText.slice(0, 200)}`);
       }
 
       const result = await submitResp.json();
+      setStatusText("📥 收到响应，解析中...");
+      console.log("即梦 API 响应:", result);
 
-      // Check for image URL in various possible response formats
       let imageUrl = "";
-
       if (result.data && result.data[0]) {
         imageUrl = result.data[0].url || result.data[0].b64_json || "";
       }
 
       if (imageUrl) {
         setGeneratedImageUrl(imageUrl);
+        setStatusText("✅ 图片生成成功！");
       } else {
-        // If no URL returned, show raw response for debugging
-        console.log("Jimeng API response:", JSON.stringify(result).slice(0, 500));
-        setErrorMsg("图片已提交但未返回URL，请查看控制台");
+        setStatusText(`⚠️ 无图片URL。响应: ${JSON.stringify(result).slice(0, 200)}`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setErrorMsg(`图片生成失败：${msg}`);
+      setErrorMsg(msg);
+      setStatusText(`❌ 错误: ${msg}`);
     } finally {
       setIsImageLoading(false);
     }
@@ -206,17 +213,34 @@ export default function GraphicDesignModule() {
   /* ── 渲染 ── */
   return (
     <AppLayout title="平面设计" fullWidth>
-      <div style={{ display: "flex", minHeight: "calc(100vh - 56px)", background: "#0a0a0a" }}>
-        {/* 左侧参数面板 */}
-        <div style={{
-          width: 300,
-          padding: 24,
-          borderRight: "1px solid #1a1a1a",
-          overflowY: "auto",
-          flexShrink: 0,
-        }}>
+      {/* 外层容器：确保不会溢出 */}
+      <div
+        style={{
+          display: "flex",
+          height: "calc(100vh - 56px)",
+          background: "#0a0a0a",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* ===== 左侧参数面板 ===== */}
+        <div
+          style={{
+            width: 300,
+            minWidth: 300,
+            padding: 24,
+            borderRight: "1px solid #1a1a1a",
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+            zIndex: 100,
+            background: "#0a0a0a",
+            boxSizing: "border-box",
+          }}
+        >
           {/* 标题 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
             <Palette size={22} color="#a29bfe" />
             <span style={{ fontSize: 17, fontWeight: 600, color: "#fff" }}>参数调整</span>
           </div>
@@ -230,12 +254,6 @@ export default function GraphicDesignModule() {
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="描述你想要的设计..."
             rows={3}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleGenerateDesign();
-              }
-            }}
             style={{
               width: "100%",
               padding: 12,
@@ -247,21 +265,14 @@ export default function GraphicDesignModule() {
               resize: "vertical",
               fontFamily: "inherit",
               boxSizing: "border-box",
-              marginBottom: 20,
+              marginBottom: 16,
               outline: "none",
             }}
           />
 
           {/* 风格选择 */}
-          <label style={{ display: "block", fontSize: 13, color: "#999", marginBottom: 8 }}>
-            风格选择
-          </label>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: 8,
-            marginBottom: 20,
-          }}>
+          <label style={{ display: "block", fontSize: 13, color: "#999", marginBottom: 8 }}>风格选择</label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 16 }}>
             {STYLES.map((s) => (
               <button
                 key={s.id}
@@ -272,8 +283,10 @@ export default function GraphicDesignModule() {
                   border: selectedStyle === s.id ? "1px solid #6c5ce7" : "1px solid #222",
                   borderRadius: 10,
                   cursor: "pointer",
-                  textAlign: "center" as const,
+                  textAlign: "center",
                   transition: "all 0.15s",
+                  position: "relative",
+                  zIndex: 101,
                 }}
               >
                 <p style={{ margin: 0, fontSize: 13, color: selectedStyle === s.id ? "#a29bfe" : "#ddd" }}>{s.label}</p>
@@ -283,7 +296,7 @@ export default function GraphicDesignModule() {
           </div>
 
           {/* 创意强度 */}
-          <label style={{ display: "block", fontSize: 13, color: "#999", marginBottom: 8 }}>
+          <label style={{ display: "block", fontSize: 13, color: "#999", marginBottom: 6 }}>
             创意强度 {intensity}%
           </label>
           <input
@@ -292,22 +305,15 @@ export default function GraphicDesignModule() {
             max={100}
             value={intensity}
             onChange={(e) => setIntensity(Number(e.target.value))}
-            style={{
-              width: "100%",
-              accentColor: "#a29bfe",
-              marginBottom: 4,
-            }}
+            style={{ width: "100%", accentColor: "#a29bfe", marginBottom: 4 }}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#666", marginBottom: 20 }}>
-            <span>保守</span>
-            <span>激进</span>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#666", marginBottom: 16 }}>
+            <span>保守</span><span>激进</span>
           </div>
 
           {/* 输出尺寸 */}
-          <label style={{ display: "block", fontSize: 13, color: "#999", marginBottom: 8 }}>
-            输出尺寸
-          </label>
-          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+          <label style={{ display: "block", fontSize: 13, color: "#999", marginBottom: 8 }}>输出尺寸</label>
+          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
             {SIZES.map((size) => (
               <button
                 key={size.id}
@@ -319,8 +325,9 @@ export default function GraphicDesignModule() {
                   border: selectedSize === size.id ? "1px solid #6c5ce7" : "1px solid #222",
                   borderRadius: 10,
                   cursor: "pointer",
-                  textAlign: "center" as const,
-                  transition: "all 0.15s",
+                  textAlign: "center",
+                  position: "relative",
+                  zIndex: 101,
                 }}
               >
                 <p style={{ margin: 0, fontSize: 13, color: selectedSize === size.id ? "#a29bfe" : "#ddd" }}>{size.label}</p>
@@ -329,58 +336,109 @@ export default function GraphicDesignModule() {
             ))}
           </div>
 
-          {/* 操作按钮 */}
-          <button
-            disabled={!prompt.trim() || isImageLoading}
-            onClick={handleGenerateImage}
-            style={{
-              width: "100%",
-              padding: 12,
-              background: (!prompt.trim() || isImageLoading) ? "#333" : "linear-gradient(135deg, #6c5ce7, #a29bfe)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: (!prompt.trim() || isImageLoading) ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            {isImageLoading ? <Loader2 size={18} className="spin" /> : <Wand2 size={18} />}
-            {isImageLoading ? "正在生成..." : "✨ AI 生成设计"}
-          </button>
+          {/* ===== 关键操作按钮区 ===== */}
+          <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #1a1a1a", position: "relative", zIndex: 200 }}>
 
-          {/* 发送文字提示按钮 */}
-          <button
-            disabled={!prompt.trim() || isChatLoading}
-            onClick={handleGenerateDesign}
-            style={{
-              width: "100%",
-              padding: 10,
-              marginTop: 8,
-              background: "transparent",
-              color: "#888",
-              border: "1px solid #2a2a2a",
-              borderRadius: 10,
-              fontSize: 13,
-              cursor: (!prompt.trim() || isChatLoading) ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
-          >
-            {isChatLoading ? <Loader2 size={14} className="spin" /> : <Send size={14} />}
-            先问AI设计建议
-          </button>
+            {/* AI 生成设计 — 主按钮 */}
+            <button
+              ref={btnImageRef}
+              disabled={!prompt.trim() || isImageLoading}
+              onMouseDown={() => console.log("MOUSE DOWN on image button")}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("CLICK on image button! prompt=", prompt?.trim()?.length);
+                handleGenerateImage();
+              }}
+              onPointerDown={() => console.log("POINTER DOWN on image button")}
+              style={{
+                width: "100%",
+                padding: 14,
+                background: (!prompt.trim() || isImageLoading) ? "#333" : "linear-gradient(135deg, #6c5ce7, #a29bfe)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 10,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: (!prompt.trim() || isImageLoading) ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                position: "relative",
+                zIndex: 201,
+                pointerEvents: "auto",
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {isImageLoading ? <Loader2 size={18} className="spin" /> : <Wand2 size={18} />}
+              {isImageLoading ? "正在生成..." : "✨ AI 生成设计"}
+            </button>
+
+            {/* 先问AI设计建议 — 次按钮 */}
+            <button
+              ref={btnChatRef}
+              disabled={!prompt.trim() || isChatLoading}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("CLICK on chat button! prompt=", prompt?.trim()?.length);
+                handleGenerateDesign();
+              }}
+              style={{
+                width: "100%",
+                padding: 11,
+                marginTop: 8,
+                background: "transparent",
+                color: "#aaa",
+                border: "1px solid #333",
+                borderRadius: 10,
+                fontSize: 13,
+                cursor: (!prompt.trim() || isChatLoading) ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                position: "relative",
+                zIndex: 201,
+                pointerEvents: "auto",
+              }}
+            >
+              {isChatLoading ? <Loader2 size={14} className="spin" /> : <Send size={14} />}
+              {isChatLoading ? "思考中..." : "先问AI设计建议"}
+            </button>
+
+            {/* 状态信息面板 */}
+            {statusText && (
+              <div style={{
+                marginTop: 12,
+                padding: 10,
+                background: "rgba(99,102,241,0.08)",
+                border: "1px solid rgba(99,102,241,0.25)",
+                borderRadius: 8,
+                color: "#818cf8",
+                fontSize: 12,
+                fontFamily: "monospace",
+                lineHeight: 1.5,
+                wordBreak: "break-word",
+              }}>
+                {statusText}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* 右侧内容区 */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* 标签页切换 */}
+        {/* ===== 右侧内容区 ===== */}
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          position: "relative",
+          zIndex: 1,
+        }}>
+          {/* 标签页 */}
           <div style={{
             display: "flex",
             borderBottom: "1px solid #1a1a1a",
@@ -395,13 +453,9 @@ export default function GraphicDesignModule() {
                 key={tab.key}
                 style={{
                   padding: "14px 20px",
-                  borderBottom:
-                    (tab.key === "image" && generatedImageUrl) ? "2px solid #6c5ce7"
-                    : tab.key === "chat" ? "2px solid transparent"
-                    : "2px solid transparent",
+                  borderBottom: (tab.key === "image" && generatedImageUrl) ? "2px solid #6c5ce7" : "2px solid transparent",
                   color: (tab.key === "image" && generatedImageUrl) ? "#a29bfe" : "#666",
                   fontSize: 13,
-                  cursor: "default",
                 }}
               >
                 <tab.icon size={16} style={{ marginRight: 6, verticalAlign: "middle" }} />
@@ -410,15 +464,15 @@ export default function GraphicDesignModule() {
             ))}
           </div>
 
-          {/* 主内容区域 */}
-          <div style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-            {/* 图片展示区 */}
+          {/* 主内容滚动区 */}
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {/* 图片区域 */}
             {(generatedImageUrl || isImageLoading) ? (
               <div style={{ padding: 32, display: "flex", flexDirection: "column", alignItems: "center", minHeight: 400 }}>
                 {isImageLoading ? (
                   <div style={{
-                    width: Math.min(500, SIZE_MAP[selectedSize].width * 400 / SIZE_MAP[selectedSize].height),
-                    aspectRatio: `${SIZE_MAP[selectedSize].width}/${SIZE_MAP[selectedSize].height}`,
+                    width: 500,
+                    aspectRatio: "4/3",
                     background: "#141414",
                     border: "1px solid #252525",
                     borderRadius: 12,
@@ -430,111 +484,34 @@ export default function GraphicDesignModule() {
                   }}>
                     <Loader2 size={40} className="spin" style={{ color: "#6c5ce7" }} />
                     <p style={{ color: "#888", fontSize: 14 }}>即梦 AI 正在创作中...</p>
-                    <p style={{ color: "#555", fontSize: 12 }}>预计需要 10-30 秒</p>
                   </div>
                 ) : generatedImageUrl ? (
                   <div style={{ position: "relative", maxWidth: "100%" }}>
-                    <img
-                      src={generatedImageUrl}
-                      alt="AI 生成的设计图"
-                      style={{
-                        maxWidth: "100%",
-                        maxHeight: "70vh",
-                        borderRadius: 12,
-                        border: "1px solid #252525",
-                        boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
-                      }}
-                    />
-                    <div style={{
-                      position: "absolute",
-                      bottom: 12,
-                      right: 12,
-                      display: "flex",
-                      gap: 8,
-                    }}>
-                      <button
-                        onClick={() => window.open(generatedImageUrl, "_blank")}
-                        style={{
-                          padding: "8px 14px",
-                          background: "rgba(0,0,0,0.7)",
-                          backdropFilter: "blur(10px)",
-                          color: "#fff",
-                          border: "1px solid rgba(255,255,255,0.15)",
-                          borderRadius: 8,
-                          fontSize: 12,
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 5,
-                        }}
-                      >
-                        <Download size={14} /> 下载
-                      </button>
-                      <button
-                        onClick={() => { setGeneratedImageUrl(""); setPrompt(""); }}
-                        style={{
-                          padding: "8px 14px",
-                          background: "rgba(0,0,0,0.7)",
-                          backdropFilter: "blur(10px)",
-                          color: "#fff",
-                          border: "1px solid rgba(255,255,255,0.15)",
-                          borderRadius: 8,
-                          fontSize: 12,
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 5,
-                        }}
-                      >
-                        <RotateCcw size={14} /> 重做
-                      </button>
+                    <img src={generatedImageUrl} alt="AI 生成图" style={{
+                      maxWidth: "100%", maxHeight: "70vh", borderRadius: 12,
+                      border: "1px solid #252525", boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+                    }} />
+                    <div style={{ position: "absolute", bottom: 12, right: 12, display: "flex", gap: 8 }}>
+                      <button onClick={() => window.open(generatedImageUrl, "_blank")} style={{
+                        padding: "8px 14px", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(10px)",
+                        color: "#fff", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, fontSize: 12, cursor: "pointer",
+                      }}><Download size={14} /> 下载</button>
+                      <button onClick={() => { setGeneratedImageUrl(""); setPrompt(""); }} style={{
+                        padding: "8px 14px", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(10px)",
+                        color: "#fff", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, fontSize: 12, cursor: "pointer",
+                      }}><RotateCcw size={14} /> 重做</button>
                     </div>
                     <div style={{
-                      position: "absolute",
-                      bottom: 12,
-                      left: 12,
-                      padding: "6px 12px",
-                      background: "rgba(0,0,0,0.7)",
-                      backdropFilter: "blur(10px)",
-                      color: "#a29bfe",
-                      borderRadius: 6,
-                      fontSize: 11,
-                    }}>
-                      即梦 AI 生成 · {selectedSize}
-                    </div>
+                      position: "absolute", bottom: 12, left: 12, padding: "6px 12px",
+                      background: "rgba(0,0,0,0.7)", backdropFilter: "blur(10px)",
+                      color: "#a29bfe", borderRadius: 6, fontSize: 11,
+                    }}>即梦 AI 生成 · {selectedSize}</div>
                   </div>
                 ) : null}
 
-                {/* 错误信息 */}
                 {errorMsg && (
-                  <div style={{
-                    marginTop: 16,
-                    padding: 12,
-                    background: "rgba(239,68,68,0.1)",
-                    border: "1px solid rgba(239,68,68,0.3)",
-                    borderRadius: 8,
-                    color: "#ef4444",
-                    fontSize: 13,
-                    maxWidth: 500,
-                  }}>
+                  <div style={{ marginTop: 16, padding: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, color: "#ef4444", fontSize: 13, maxWidth: 500 }}>
                     ⚠️ {errorMsg}
-                  </div>
-                )}
-
-                {/* 调试信息 */}
-                {debugInfo && (
-                  <div style={{
-                    marginTop: 12,
-                    padding: 10,
-                    background: "rgba(99,102,241,0.1)",
-                    border: "1px solid rgba(99,102,241,0.3)",
-                    borderRadius: 8,
-                    color: "#818cf8",
-                    fontSize: 12,
-                    maxWidth: 500,
-                    fontFamily: "monospace",
-                  }}>
-                    🔍 {debugInfo}
                   </div>
                 )}
               </div>
@@ -542,86 +519,41 @@ export default function GraphicDesignModule() {
 
             {/* 聊天区 */}
             <div style={{ padding: "20px 28px", paddingBottom: 80 }}>
-              {messages.length > 0 ? (
-                messages.map((msg, idx) => (
-                  <div
-                    key={`${idx}-${msg.role}`}
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      marginBottom: 18,
-                      ...(msg.role === "user" ? { flexDirection: "row-reverse" as const } : {}),
-                    }}
-                  >
-                    <div style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: "50%",
-                      background: msg.role === "user" ? "#6c5ce7" : "#333",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}>
-                      {msg.role === "user"
-                        ? <User size={16} color="#fff" />
-                        : <Bot size={16} color="#a29bfe" />
-                      }
-                    </div>
-                    <div style={{
-                      maxWidth: "75%",
-                      padding: "12px 16px",
-                      borderRadius: msg.role === "user"
-                        ? "16px 4px 16px 16px"
-                        : "4px 16px 16px 16px",
-                      background: msg.role === "user" ? "#6c5ce7" : "#1a1a1a",
-                      color: msg.role === "user" ? "#fff" : "#e5e5e5",
-                      fontSize: 14,
-                      lineHeight: 1.65,
-                      whiteSpace: "pre-wrap" as const,
-                      wordBreak: "break-word" as const,
-                    }}>
-                      {msg.content}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                /* 空状态 */
-                <div style={{
-                  textAlign: "center",
-                  paddingTop: 60,
-                  color: "#555",
+              {messages.length > 0 ? messages.map((msg, idx) => (
+                <div key={`${idx}-${msg.role}`} style={{
+                  display: "flex", gap: 10, marginBottom: 18,
+                  ...(msg.role === "user" ? { flexDirection: "row-reverse" } : {}),
                 }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: "50%",
+                    background: msg.role === "user" ? "#6c5ce7" : "#333",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}>
+                    {msg.role === "user" ? <User size={16} color="#fff" /> : <Bot size={16} color="#a29bfe" />}
+                  </div>
+                  <div style={{
+                    maxWidth: "75%", padding: "12px 16px",
+                    borderRadius: msg.role === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
+                    background: msg.role === "user" ? "#6c5ce7" : "#1a1a1a",
+                    color: msg.role === "user" ? "#fff" : "#e5e5e5",
+                    fontSize: 14, lineHeight: 1.65,
+                    whiteSpace: "pre-wrap", wordBreak: "break-word",
+                  }}>{msg.content}</div>
+                </div>
+              )) : !generatedImageUrl ? (
+                <div style={{ textAlign: "center", paddingTop: 60, color: "#555" }}>
                   <Palette size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
                   <p style={{ fontSize: 15, color: "#777", margin: 0 }}>开始你的平面设计之旅</p>
                   <p style={{ fontSize: 13, color: "#555", marginTop: 6 }}>输入创意描述，让 AI 为你生成设计方案和精美图片</p>
                 </div>
-              )}
+              ) : null}
 
-              {/* 加载动画 */}
               {isChatLoading && (
                 <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-                  <div style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: "50%",
-                    background: "#333",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}>
-                    <Bot size={16} color="#a29bfe" />
-                  </div>
-                  <div style={{
-                    padding: "12px 16px",
-                    background: "#1a1a1a",
-                    borderRadius: "4px 16px 16px 16px",
-                    color: "#999",
-                    fontSize: 14,
-                  }}>
-                    <Loader2 size={16} className="spin" style={{ marginRight: 8 }} />
-                    思考中...
+                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#333", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Bot size={16} color="#a29bfe" /></div>
+                  <div style={{ padding: "12px 16px", background: "#1a1a1a", borderRadius: "4px 16px 16px 16px", color: "#999", fontSize: 14 }}>
+                    <Loader2 size={16} className="spin" style={{ marginRight: 8 }} />思考中...
                   </div>
                 </div>
               )}
@@ -632,15 +564,9 @@ export default function GraphicDesignModule() {
         </div>
       </div>
 
-      {/* 全局旋转动画 */}
       <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .spin {
-          animation: spin 1s linear infinite;
-        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
       `}</style>
     </AppLayout>
   );
