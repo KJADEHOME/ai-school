@@ -81,7 +81,7 @@ const modules = [
     id: "music",
     title: "音乐创作",
     subtitle: "旋律 · 歌词 · 编曲",
-    description: "用AI谱出你此刻的心情旋律",
+    description: "用AI谱出你此刻的创意旋律",
     tags: ["心情选曲", "AI谱曲", "歌词生成"],
     icon: Music,
     color: "#FFD166",
@@ -316,13 +316,13 @@ export default function Home() {
         <motion.div className="relative z-10 text-center px-4 max-w-2xl mx-auto" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className="w-2 h-2 rounded-full bg-[#4A90E2] animate-breathe" />
-            <span className="text-sm" style={{ color: "#4A90E2" }}>skyvido · AI 创作创作疗愈平台</span>
+            <span className="text-sm" style={{ color: "#4A90E2" }}>skyvido · AI 创作学习平台</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "var(--color-text)" }}>
             今日，你的心情是什么颜色？
           </h1>
           <p className="text-sm mb-6" style={{ color: "var(--color-text-secondary)" }}>
-            选择心情，开启你的创作疗愈任务
+            选择心情，开启你的创作学习任务
           </p>
 
           {/* Mood Selector */}
@@ -546,7 +546,7 @@ export default function Home() {
       <section className="px-6 py-12 max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <span className="text-[10px] font-medium px-2.5 py-1 rounded-full mb-2 inline-block" style={{ background: "rgba(74,144,226,0.08)", color: "#4A90E2" }}>六大创作工具</span>
-          <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>AI创作，疗愈心灵</h2>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>AI创作，释放灵感</h2>
         </div>
 
         <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
