@@ -1,4 +1,5 @@
-# .vercelignore
+# Only ignore specific old tRPC API files - DO NOT use api/* wildcard
+# Vercel does NOT support ! negation patterns
 api/auth-router.ts
 api/boot.ts
 api/context.ts
@@ -7,10 +8,7 @@ api/mureka-router.ts
 api/recharge-router.ts
 api/router.ts
 api/sms-router.ts
-api/volcengine-image.ts
 api/volcengine-router.ts
-api/kimi/
-api/lib/
-api/queries/
-contracts
-db
+api/kimi
+api/lib
+api/queries
