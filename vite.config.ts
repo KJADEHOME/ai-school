@@ -30,4 +30,4 @@ export default defineConfig(({ command }) => ({
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },
-});
+}));
