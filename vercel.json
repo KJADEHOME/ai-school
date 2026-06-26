@@ -1,9 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/ping.js", "use": "@vercel/node" },
-    { "src": "api/volcengine-image.js", "use": "@vercel/node" }
-  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
