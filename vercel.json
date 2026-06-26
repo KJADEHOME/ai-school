@@ -3,6 +3,13 @@
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npx vite build",
   "outputDirectory": "dist/public",
+  "functions": {
+    "api/volcengine-image.js": {
+      "runtime": "nodejs22.x",
+      "memory": 512,
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
       "source": "/((?!api/).*)",
