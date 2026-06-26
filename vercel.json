@@ -1,10 +1,17 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/ping.js", "use": "@vercel/node" },
-    { "src": "api/volcengine-image.js", "use": "@vercel/node" },
-    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
-  ],
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/ping.js": {
+      "memory": 128,
+      "maxDuration": 10
+    },
+    "api/volcengine-image.js": {
+      "memory": 512,
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
