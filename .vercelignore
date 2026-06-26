@@ -1,3 +1,4 @@
+# .vercelignore
 api/auth-router.ts
 api/boot.ts
 api/context.ts
