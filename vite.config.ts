@@ -6,10 +6,14 @@ import { defineConfig } from "vite"
 import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
-    devServer({ entry: "api/boot.ts", exclude: [/^\/(?!api\/).*$/] }),
-    inspectAttr(), react()],
+    // devServer 仅在 dev 模式下加载
+    ...(command === "serve" ? [devServer({ entry: "api/boot.ts", exclude: [/^\/(?!api\/).*$/] })] : []),
+    // kimi-plugin-inspect-react 仅在 dev 模式下加载（生产环境会崩溃）
+    ...(command === "serve" ? [inspectAttr()] : []),
+    react(),
+  ],
   server: {
     port: 3000,
   },

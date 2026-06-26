@@ -1,3 +1,5 @@
-api
+# 忽略旧的 tRPC API（boot.ts, router.ts 等），但保留新的 REST API
+api/*
+!api/volcengine-image.js
 contracts
 db
