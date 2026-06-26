@@ -1,0 +1,2 @@
+# .vercelignore is intentionally empty for testing
+# The builds array in vercel.json should handle file selection
