@@ -11,7 +11,6 @@ import {
   RotateCcw,
 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
-import { trpc } from "@/providers/trpc";
 
 const STYLES = [
   { id: "minimal", label: "极简", desc: "简洁干净" },
@@ -134,32 +133,38 @@ export default function GraphicDesignModule() {
     }
   }
 
-  /* ── 即梦 Seedream 图片生成（通过 tRPC 后端代理）── */
-  const generateImageMutation = trpc.volcengine.generateImage.useMutation({
-    onSuccess: (data) => {
-      setGeneratedImageUrl(data.imageUrl);
-      setStatusText("✅ 图片生成成功！");
-      setIsImageLoading(false);
-    },
-    onError: (err) => {
-      setErrorMsg(err.message);
-      setStatusText(`❌ 错误: ${err.message}`);
-      setIsImageLoading(false);
-    },
-  });
-
+  /* ── 即梦 Seedream 图片生成（REST API 代理）── */
   async function handleGenerateImage() {
     if (!prompt.trim()) return;
     setIsImageLoading(true);
     setGeneratedImageUrl("");
     setErrorMsg("");
-    setStatusText("⏳ 正在通过后端调用即梦 API...");
+    setStatusText("⏳ 正在调用即梦 API...");
 
-    generateImageMutation.mutate({
-      prompt: prompt.trim(),
-      size: selectedSize,
-      style: selectedStyle,
-    });
+    try {
+      const resp = await fetch("/api/volcengine-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          size: selectedSize,
+          style: selectedStyle,
+        }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.imageUrl) {
+        setGeneratedImageUrl(data.imageUrl);
+        setStatusText("✅ 图片生成成功！");
+      } else {
+        throw new Error(data.error || "未知错误");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMsg(msg);
+      setStatusText(`❌ 错误: ${msg}`);
+    } finally {
+      setIsImageLoading(false);
+    }
   }
 
   /* ── 渲染 ── */
