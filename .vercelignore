@@ -1,5 +1,15 @@
-# 忽略旧的 tRPC API（boot.ts, router.ts 等），但保留新的 REST API
-api/*
-!api/volcengine-image.js
+api/auth-router.ts
+api/boot.ts
+api/context.ts
+api/middleware.ts
+api/mureka-router.ts
+api/recharge-router.ts
+api/router.ts
+api/sms-router.ts
+api/volcengine-image.ts
+api/volcengine-router.ts
+api/kimi/
+api/lib/
+api/queries/
 contracts
 db
