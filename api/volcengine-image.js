@@ -21,8 +21,8 @@ export default async function handler(req, res) {
     const styleNames = { minimal: "极简风格", retro: "复古风格", scifi: "科幻风格", cute: "可爱风格", elegant: "优雅风格", bold: "大胆风格" };
     const styleName = styleNames[style || "minimal"] || "极简风格";
 
-    const sizeMap = { "1:1": "1:1", "4:3": "4:3", "9:16": "9:16" };
-    const imageSize = sizeMap[size || "1:1"] || "2K";
+    const sizeMap = { "1:1": "1024x1024", "4:3": "1365x1024", "9:16": "768x1080" };
+    const imageSize = sizeMap[size || "1:1"] || "1024x1024";
 
     const resp = await fetch("https://ark.cn-beijing.volces.com/api/v3/images/generations", {
       method: "POST",
