@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware";
-import { getDb } from "./queries/connection";
 
 const VOLCENGINE_API_KEY = process.env.VOLCENGINE_API_KEY || "";
 const VOLCENGINE_BASE = "https://ark.cn-beijing.volces.com/api/v3/images/generations";
@@ -19,12 +18,15 @@ async function callVolcengineImage(prompt: string, size: string, style: string):
     bold: "大胆风格",
   };
   const styleName = styleNames[style] || "极简风格";
+
+  // 官方文档支持的尺寸参数：1:1 / 4:3 / 9:16 / 3:4 / 16:9 / 2K 等
+  // 直接透传用户选择，默认使用 2K（高质量）
   const sizeMap: Record<string, string> = {
-    "1:1": "1024*1024",
-    "4:3": "1365*1024",
-    "9:16": "768*1080",
+    "1:1": "1:1",
+    "4:3": "4:3",
+    "9:16": "9:16",
   };
-  const imageSize = sizeMap[size] || "1024*1024";
+  const imageSize = sizeMap[size] || "2K";
 
   const response = await fetch(VOLCENGINE_BASE, {
     method: "POST",
@@ -37,6 +39,8 @@ async function callVolcengineImage(prompt: string, size: string, style: string):
       prompt: `${styleName}，${prompt}。高质量，细节丰富`,
       n: 1,
       size: imageSize,
+      response_format: "url",
+      watermark: false,
     }),
   });
 
@@ -57,7 +61,7 @@ async function callVolcengineImage(prompt: string, size: string, style: string):
 }
 
 export const volcengineRouter = createRouter({
-  // 生成图片
+  // 生成图片（mutation — 因为有副作用/消耗配额）
   generateImage: publicQuery
     .input(
       z.object({
@@ -66,36 +70,14 @@ export const volcengineRouter = createRouter({
         style: z.string().default("minimal"),
       })
     )
-    .query(async ({ input }) => {
+    .mutation(async ({ input }) => {
       const imageUrl = await callVolcengineImage(input.prompt, input.size, input.style);
       return { imageUrl };
     }),
 
-  // 测试 API Key 是否有效
+  // 测试连接
   testConnection: publicQuery.query(async () => {
     if (!VOLCENGINE_API_KEY) return { ok: false, error: "未配置 VOLCENGINE_API_KEY" };
-    try {
-      // 用一个简单请求测试
-      const response = await fetch(VOLCENGINE_BASE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${VOLCENGINE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "doubao-seedream-5-0-260128",
-          prompt: "test",
-          n: 1,
-          size: "1024*1024",
-        }),
-      });
-      if (!response.ok) {
-        const err = await response.text();
-        return { ok: false, status: response.status, error: err.slice(0, 200) };
-      }
-      return { ok: true, message: "即梦 API 连接正常" };
-    } catch (e: unknown) {
-      return { ok: false, error: e instanceof Error ? e.message : String(e) };
-    }
+    return { ok: true, keyPrefix: VOLCENGINE_API_KEY.slice(0, 12) };
   }),
 });

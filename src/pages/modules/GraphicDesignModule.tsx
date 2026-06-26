@@ -61,8 +61,6 @@ export default function GraphicDesignModule() {
 
   /* ── DeepSeek 文字方案生成 ── */
   async function handleGenerateDesign() {
-    // 立即反馈
-    alert("✅ 点击被触发了！正在连接 DeepSeek...");
     if (!prompt.trim()) return;
     const userMsg = prompt.trim();
     setPrompt("");
