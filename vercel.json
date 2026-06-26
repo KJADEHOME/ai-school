@@ -1,11 +1,24 @@
 {
   "version": 2,
+  "installCommand": "npm install -g npm@latest && npm install --legacy-peer-deps",
   "buildCommand": "npx vite build",
   "outputDirectory": "dist/public",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/boot.ts": {
+      "memory": 256,
+      "maxDuration": 60
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/boot"
     }
   ]
 }
