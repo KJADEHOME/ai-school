@@ -1,15 +1,19 @@
 {
   "version": 2,
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npx vite build",
-  "outputDirectory": "dist/public",
-  "functions": {
-    "api/volcengine-image.js": {
-      "runtime": "nodejs22.x",
-      "memory": 512,
-      "maxDuration": 60
+  "builds": [
+    {
+      "src": "api/volcengine-image.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist/public",
+        "buildCommand": "npx vite build"
+      }
     }
-  },
+  ],
   "rewrites": [
     {
       "source": "/((?!api/).*)",
